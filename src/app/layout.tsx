@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/ToastProvider";
 import { AppProvider } from "@/context/AppContext";
+import SplashScreen from "@/components/SplashScreen";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,7 +40,10 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[#fbfbfd] text-neutral-900 font-sans">
         <ToastProvider>
-          <AppProvider>{children}</AppProvider>
+          <AppProvider>
+            <SplashScreen />
+            {children}
+          </AppProvider>
         </ToastProvider>
       </body>
     </html>
