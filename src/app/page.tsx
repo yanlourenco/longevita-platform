@@ -247,18 +247,25 @@ export default function LongeVitaDashboard() {
           </nav>
 
           {/* Botões de Ação e Acesso */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/assistido/novo"
-              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[#72b63f] to-[#02a9b5] text-white px-4 py-2.5 rounded-2xl text-xs font-bold shadow-md shadow-[#02a9b5]/20 hover:opacity-95 transition-opacity"
+              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-[#72b63f] to-[#02a9b5] text-white px-3 sm:px-4 py-2.5 rounded-2xl text-xs font-bold shadow-md shadow-[#02a9b5]/20 hover:opacity-95 transition-opacity"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Cadastrar</span> Assistido
             </Link>
 
             <Link
+              href="/cadastro/contratante"
+              className="hidden lg:inline-flex text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-3.5 py-2 rounded-xl transition-colors"
+            >
+              Sou Contratante
+            </Link>
+
+            <Link
               href="/login"
-              className="text-xs font-bold text-neutral-700 hover:text-neutral-900 px-3.5 py-2 rounded-xl hover:bg-neutral-100 transition-colors"
+              className="text-xs font-bold text-neutral-700 hover:text-neutral-900 px-3 py-2 rounded-xl hover:bg-neutral-100 transition-colors"
             >
               Entrar
             </Link>
