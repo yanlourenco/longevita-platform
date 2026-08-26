@@ -118,6 +118,13 @@ export default function DashboardPage() {
     }
   }, [currentUser]);
 
+  // Bloqueia e redireciona abas exclusivas de cuidador caso seja família
+  useEffect(() => {
+    if (userRole === "family" && (activeTab === "explorar" || activeTab === "diario")) {
+      setActiveTab("vinculos");
+    }
+  }, [userRole, activeTab]);
+
   // Cuidadores Disponíveis (filtrados e reativos)
   const availableCaregivers = useMemo(() => {
     return caregivers.filter((c) => {
@@ -277,51 +284,43 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Seletor Dinâmico de Perfil Contextual (Família vs Cuidador) */}
+          {/* Tag do Portal Ativo (Isolamento Estrito de Perfil) */}
           <div className={`p-4 ${mobileMenuOpen ? "block" : "hidden md:block"}`}>
-            <div className="mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 block px-1 mb-1.5">
-                Alternar Contexto de Usuário
-              </span>
-              <div className="bg-neutral-100 p-1 rounded-2xl border border-neutral-200 flex">
-                <button
-                  onClick={() => {
-                    setUserRole("family");
-                    setActiveTab("vinculos");
-                  }}
-                  className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+            <div className="mb-4 p-3.5 rounded-2xl bg-neutral-900 text-white flex items-center justify-between shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                     userRole === "family"
-                      ? "bg-white text-neutral-900 shadow-sm border border-neutral-200"
-                      : "text-neutral-500 hover:text-neutral-900"
+                      ? "bg-[#72b63f]/20 text-[#8be24d]"
+                      : "bg-[#02a9b5]/20 text-[#38d7e5]"
                   }`}
                 >
-                  <Heart className="w-3.5 h-3.5 text-[#72b63f]" />
-                  Família
-                </button>
-                <button
-                  onClick={() => {
-                    setUserRole("caregiver");
-                    setActiveTab("vinculos");
-                  }}
-                  className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                    userRole === "caregiver"
-                      ? "bg-white text-neutral-900 shadow-sm border border-neutral-200"
-                      : "text-neutral-500 hover:text-neutral-900"
-                  }`}
-                >
-                  <Stethoscope className="w-3.5 h-3.5 text-[#02a9b5]" />
-                  Cuidador
-                </button>
+                  {userRole === "family" ? (
+                    <Heart className="w-4 h-4" />
+                  ) : (
+                    <Stethoscope className="w-4 h-4" />
+                  )}
+                </div>
+                <div>
+                  <span className="text-xs font-bold block">
+                    {userRole === "family" ? "Painel da Família" : "Painel do Cuidador"}
+                  </span>
+                  <span className="text-[10px] text-neutral-400 block font-medium">
+                    {userRole === "family"
+                      ? "Acesso Exclusivo Contratante"
+                      : "Painel Profissional de Atendimento"}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Menu Vertical de Navegação por 4 Abas */}
-            <div className="space-y-1 mt-4">
+            {/* Menu Vertical de Navegação Contextual */}
+            <div className="space-y-1 mt-2">
               <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400 px-3 block mb-2">
-                Navegação Integrada
+                Navegação do Portal
               </span>
 
-              {/* ABA 1: MEUS VÍNCULOS ATIVOS */}
+              {/* ABA 1: MEUS VÍNCULOS ATIVOS (FAMÍLIA) / MINHAS FAMÍLIAS (CUIDADOR) */}
               <button
                 onClick={() => {
                   setActiveTab("vinculos");
@@ -344,30 +343,51 @@ export default function DashboardPage() {
                 </span>
               </button>
 
-              {/* ABA 2: EXPLORAR / NOVOS VÍNCULOS */}
-              <button
-                onClick={() => {
-                  setActiveTab("explorar");
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
-                  activeTab === "explorar"
-                    ? "bg-[#02a9b5]/10 text-[#028490] border border-[#02a9b5]/30 shadow-sm"
-                    : "text-neutral-600 hover:bg-neutral-100"
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Users className="w-4 h-4 text-[#02a9b5]" />
-                  <span>
-                    {userRole === "family" ? "Cuidadores Disponíveis" : "Oportunidades / Famílias"}
+              {/* SE FOR FAMÍLIA: MOSTRA APENAS FICHA MÉDICA & ASSISTIDOS (SEM ACESSO À ABA DE CUIDADORES) */}
+              {userRole === "family" ? (
+                <button
+                  onClick={() => {
+                    setActiveTab("ficha");
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
+                    activeTab === "ficha"
+                      ? "bg-emerald-50 text-emerald-900 border border-emerald-200 shadow-sm"
+                      : "text-neutral-600 hover:bg-neutral-100"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileText className="w-4 h-4 text-emerald-600" />
+                    <span>Ficha Médica & Assistidos</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                    {familyAssistidos.length}
                   </span>
-                </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700">
-                  {userRole === "family" ? availableCaregivers.length : availableOpportunities.length}
-                </span>
-              </button>
+                </button>
+              ) : (
+                /* SE FOR CUIDADOR: MOSTRA A ABA DE OPORTUNIDADES / FAMÍLIAS */
+                <button
+                  onClick={() => {
+                    setActiveTab("explorar");
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
+                    activeTab === "explorar"
+                      ? "bg-[#02a9b5]/10 text-[#028490] border border-[#02a9b5]/30 shadow-sm"
+                      : "text-neutral-600 hover:bg-neutral-100"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className="w-4 h-4 text-[#02a9b5]" />
+                    <span>Oportunidades / Famílias</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700">
+                    {availableOpportunities.length}
+                  </span>
+                </button>
+              )}
 
-              {/* ABA 3: NOTIFICAÇÕES & PROPOSTAS */}
+              {/* ABA DE NOTIFICAÇÕES & PROPOSTAS */}
               <button
                 onClick={() => {
                   setActiveTab("propostas");
@@ -384,32 +404,14 @@ export default function DashboardPage() {
                   <span>Notificações & Propostas</span>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white">
-                  {contracts.filter((c) => c.status === "pendente").length}
+                  {userRole === "family"
+                    ? familyContracts.filter((c) => c.status === "pendente").length
+                    : contracts.filter((c) => c.status === "pendente").length}
                 </span>
               </button>
 
-              {/* ABA 4: PERFIL & FICHA MÉDICA / DIÁRIO */}
-              {userRole === "family" ? (
-                <button
-                  onClick={() => {
-                    setActiveTab("ficha");
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
-                    activeTab === "ficha"
-                      ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
-                      : "text-neutral-600 hover:bg-neutral-100"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <FileText className="w-4 h-4 text-emerald-600" />
-                    <span>Ficha Médica & Assistidos</span>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                    {familyAssistidos.length}
-                  </span>
-                </button>
-              ) : (
+              {/* ABA EXCLUSIVA DO CUIDADOR: DIÁRIO DE BORDO */}
+              {userRole === "caregiver" && (
                 <button
                   onClick={() => {
                     setActiveTab("diario");
@@ -417,7 +419,7 @@ export default function DashboardPage() {
                   }}
                   className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
                     activeTab === "diario"
-                      ? "bg-amber-50 text-amber-900 border border-amber-200"
+                      ? "bg-amber-50 text-amber-900 border border-amber-200 shadow-sm"
                       : "text-neutral-600 hover:bg-neutral-100"
                   }`}
                 >
@@ -947,311 +949,134 @@ export default function DashboardPage() {
           )}
 
           {/* ========================================================================= */}
-          {/* ABA 2: EXPLORAR / NOVOS VÍNCULOS (CUIDADORES OU OPORTUNIDADES)            */}
+          {/* ABA 2: OPORTUNIDADES / FAMÍLIAS (EXCLUSIVO PARA O PERFIL DO CUIDADOR)     */}
           {/* ========================================================================= */}
-          {activeTab === "explorar" && (
+          {activeTab === "explorar" && userRole === "caregiver" && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="space-y-6"
             >
-              {userRole === "family" ? (
-                /* VITRINE DE CUIDADORES DISPONÍVEIS (PARA FAMÍLIA) */
-                <>
-                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-neutral-200/80 pb-5">
-                    <div>
-                      <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#02a9b5]/10 text-[#028490] text-xs font-bold mb-2 border border-[#02a9b5]/25">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        Profissionais Homologados com Antecedentes Checados
-                      </div>
-                      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900">
-                        Cuidadores Disponíveis ({availableCaregivers.length})
-                      </h1>
-                      <p className="text-neutral-600 text-xs sm:text-sm font-medium mt-1">
-                        Selecione o profissional ideal para enviar proposta de vínculo com contratação direta.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => setAddCaregiverModalOpen(true)}
-                      className="inline-flex items-center gap-1.5 bg-[#02a9b5] hover:bg-[#028490] text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm transition-all active:scale-98"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      Cadastrar Cuidador
-                    </button>
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-neutral-200/80 pb-5">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#02a9b5]/10 text-[#028490] text-xs font-bold mb-2 border border-[#02a9b5]/25">
+                    <Users className="w-3.5 h-3.5" />
+                    Oportunidades em Aberto • Reatividade em Tempo Real
                   </div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900">
+                    Famílias Buscando Profissionais ({availableOpportunities.length})
+                  </h1>
+                  <p className="text-neutral-600 text-xs sm:text-sm font-medium mt-1">
+                    Famílias que ainda não possuem cuidador fixo. Envie sua proposta para início imediato.
+                  </p>
+                </div>
+              </div>
 
-                  {/* Barra de Filtros */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white p-3.5 rounded-2xl border border-neutral-200 shadow-sm">
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
-                        <Search className="w-4 h-4" />
-                      </div>
-                      <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Buscar por nome ou especialidade..."
-                        className="w-full pl-10 pr-4 py-2 rounded-xl bg-white border border-neutral-300 text-xs font-medium placeholder:text-neutral-500 outline-none focus:border-[#02a9b5]"
-                      />
-                    </div>
+              {/* Filtros de Oportunidades */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-2xl border border-neutral-200 shadow-sm">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={opportunitySearch}
+                    onChange={(e) => setOpportunitySearch(e.target.value)}
+                    placeholder="Buscar por patologia, necessidade ou nome..."
+                    className="w-full pl-10 pr-4 py-2 rounded-xl bg-white border border-neutral-300 text-xs font-medium focus:border-[#02a9b5]"
+                  />
+                </div>
 
-                    <div>
-                      <select
-                        value={selectedSpecialty}
-                        onChange={(e) => setSelectedSpecialty(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-neutral-300 text-xs font-medium text-neutral-900 outline-none focus:border-[#02a9b5]"
-                      >
-                        <option value="all">Todas as Especialidades</option>
-                        <option value="Alzheimer">Alzheimer & Demências</option>
-                        <option value="Parkinson">Doença de Parkinson</option>
-                        <option value="Pós-Cirúrgico">Cuidados Pós-Cirúrgicos</option>
-                        <option value="Paliativos">Cuidados Paliativos</option>
-                        <option value="Mobilidade">Reabilitação & Mobilidade</option>
-                      </select>
-                    </div>
+                <div>
+                  <select
+                    value={selectedRegion}
+                    onChange={(e) => setSelectedRegion(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-neutral-300 text-xs font-medium text-neutral-900 focus:border-[#02a9b5]"
+                  >
+                    <option value="all">Todas as Regiões (São Paulo)</option>
+                    <option value="Jardins">Jardins</option>
+                    <option value="Higienópolis">Higienópolis</option>
+                    <option value="Bela Vista">Bela Vista / Paulista</option>
+                    <option value="Vila Madalena">Vila Madalena</option>
+                  </select>
+                </div>
+              </div>
 
-                    <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-neutral-50 border border-neutral-200">
-                      <span className="text-xs font-bold text-neutral-700 whitespace-nowrap">
-                        Até R$ {maxPrice}/h
-                      </span>
-                      <input
-                        type="range"
-                        min={30}
-                        max={150}
-                        step={5}
-                        value={maxPrice}
-                        onChange={(e) => setMaxPrice(Number(e.target.value))}
-                        className="w-full accent-[#02a9b5] cursor-pointer"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Grade de Cuidadores com Entrada Escalonada */}
-                  {availableCaregivers.length === 0 ? (
-                    <div className="p-12 rounded-3xl bg-white border border-dashed border-neutral-300 text-center space-y-2">
-                      <Users className="w-8 h-8 text-neutral-400 mx-auto" />
-                      <h4 className="text-sm font-bold text-neutral-800">Nenhum profissional encontrado</h4>
-                      <p className="text-xs text-neutral-500">Tente ajustar o filtro de valor ou especialidade médica.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                      {availableCaregivers.map((caregiver, index) => {
-                        const isExiting = exitingCardId === caregiver.id;
-
-                        return (
-                          <div
-                            key={caregiver.id}
-                            style={{ animationDelay: `${index * 80}ms` }}
-                            className={`stagger-card interactive-card group relative flex flex-col overflow-hidden rounded-2xl bg-white p-5 shadow-sm border border-neutral-200 justify-between ${
-                              isExiting ? "animate-card-exit" : ""
-                            }`}
-                          >
-                            <div>
-                              <div className="relative mb-3.5 h-44 w-full overflow-hidden rounded-xl bg-neutral-100 border border-neutral-200">
-                                <img
-                                  src={caregiver.foto}
-                                  alt={caregiver.nome}
-                                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                />
-                                <div className="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-md px-2.5 py-0.5 rounded-full text-xs font-bold text-neutral-900 border border-neutral-200 shadow-sm">
-                                  R$ {caregiver.valorHora}/h
-                                </div>
-                              </div>
-
-                              <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                                <span className="inline-flex items-center gap-1 rounded-full bg-[#72b63f]/10 px-2 py-0.5 text-[11px] font-bold text-[#558a2e] border border-[#72b63f]/20">
-                                  <ShieldCheck className="w-3 h-3 text-[#72b63f]" />
-                                  Antecedentes OK
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200">
-                                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                                  {caregiver.avaliacao} ({caregiver.avaliacoesQtd})
-                                </span>
-                              </div>
-
-                              <h3 className="text-lg font-bold text-neutral-900 tracking-tight">
-                                {caregiver.nome}
-                              </h3>
-
-                              <p className="mt-0.5 text-xs text-neutral-600 font-medium line-clamp-1">
-                                {caregiver.especialidade} • {caregiver.experiencia}
-                              </p>
-
-                              <div className="flex flex-wrap gap-1 mt-2.5">
-                                {(caregiver.habilidades || []).slice(0, 3).map((h, i) => (
-                                  <span key={i} className="px-2 py-0.5 rounded-md bg-[#02a9b5]/10 text-[#028490] text-[10px] font-bold">
-                                    {h}
-                                  </span>
-                                ))}
-                              </div>
-
-                              {/* Depoimento Recente (Conforme Especificação 3.0 / prompt3.md) */}
-                              {caregiver.reviews && caregiver.reviews.length > 0 && (
-                                <div className="mt-3 p-2.5 rounded-xl bg-slate-50 border-l-3 border-[#02a9b5] text-xs">
-                                  <p className="italic text-neutral-600 text-[11px] line-clamp-2 leading-relaxed">
-                                    "{caregiver.reviews[0].comment}"
-                                  </p>
-                                  <span className="text-[10px] font-bold text-neutral-500 mt-1 block">
-                                    — {caregiver.reviews[0].authorName} ({caregiver.reviews[0].authorRelation || "Familiar"})
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center gap-2">
-                              <button
-                                onClick={() => openHire(caregiver)}
-                                className="flex-1 rounded-xl bg-neutral-900 hover:bg-neutral-800 py-2 text-center text-xs font-bold text-white shadow-sm transition-all flex items-center justify-center gap-1.5 active:scale-98"
-                              >
-                                <HeartHandshake className="w-3.5 h-3.5 text-[#72b63f]" />
-                                Contratar
-                              </button>
-                              <button
-                                onClick={() => openFeedback(caregiver)}
-                                className="px-2.5 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold transition-colors flex items-center justify-center"
-                                title="Ver Avaliações & Avaliar"
-                              >
-                                <Star className="w-3.5 h-3.5 text-amber-500" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
+              {/* Grade de Oportunidades com Entrada Escalonada */}
+              {availableOpportunities.length === 0 ? (
+                <div className="p-12 rounded-3xl bg-white border border-dashed border-neutral-300 text-center space-y-2">
+                  <CheckCircle2 className="w-8 h-8 text-[#72b63f] mx-auto" />
+                  <h4 className="text-sm font-bold text-neutral-800">Todas as famílias estão com cuidadores vinculados!</h4>
+                  <p className="text-xs text-neutral-500">Novas oportunidades surgirão assim que novas famílias se cadastrarem.</p>
+                </div>
               ) : (
-                /* VITRINE DE OPORTUNIDADES / NOVAS FAMÍLIAS (PARA CUIDADORES) */
-                <>
-                  <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-neutral-200/80 pb-5">
-                    <div>
-                      <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#02a9b5]/10 text-[#028490] text-xs font-bold mb-2 border border-[#02a9b5]/25">
-                        <Users className="w-3.5 h-3.5" />
-                        Oportunidades em Aberto • Reatividade em Tempo Real
-                      </div>
-                      <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900">
-                        Famílias Buscando Profissionais ({availableOpportunities.length})
-                      </h1>
-                      <p className="text-neutral-600 text-xs sm:text-sm font-medium mt-1">
-                        Famílias que ainda não possuem cuidador fixo. Envie sua proposta para início imediato.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Filtros de Oportunidades */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-white p-3.5 rounded-2xl border border-neutral-200 shadow-sm">
-                    <div className="relative">
-                      <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                      <input
-                        type="text"
-                        value={opportunitySearch}
-                        onChange={(e) => setOpportunitySearch(e.target.value)}
-                        placeholder="Buscar por patologia, necessidade ou nome..."
-                        className="w-full pl-10 pr-4 py-2 rounded-xl bg-white border border-neutral-300 text-xs font-medium focus:border-[#02a9b5]"
-                      />
-                    </div>
-
-                    <div>
-                      <select
-                        value={selectedRegion}
-                        onChange={(e) => setSelectedRegion(e.target.value)}
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-neutral-300 text-xs font-medium text-neutral-900 focus:border-[#02a9b5]"
-                      >
-                        <option value="all">Todas as Regiões (São Paulo)</option>
-                        <option value="Jardins">Jardins</option>
-                        <option value="Higienópolis">Higienópolis</option>
-                        <option value="Bela Vista">Bela Vista / Paulista</option>
-                        <option value="Vila Madalena">Vila Madalena</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Grade de Oportunidades com Entrada Escalonada */}
-                  {availableOpportunities.length === 0 ? (
-                    <div className="p-12 rounded-3xl bg-white border border-dashed border-neutral-300 text-center space-y-2">
-                      <CheckCircle2 className="w-8 h-8 text-[#72b63f] mx-auto" />
-                      <h4 className="text-sm font-bold text-neutral-800">Todas as famílias estão com cuidadores vinculados!</h4>
-                      <p className="text-xs text-neutral-500">Novas oportunidades surgirão assim que novas famílias se cadastrarem.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                      {availableOpportunities.map((ast, index) => (
-                        <div
-                          key={ast.id}
-                          style={{ animationDelay: `${index * 80}ms` }}
-                          className="stagger-card interactive-card rounded-2xl bg-white p-6 shadow-sm border border-neutral-200 flex flex-col justify-between"
-                        >
-                          <div>
-                            <div className="flex items-start gap-4 mb-4">
-                              <div className="w-14 h-14 rounded-2xl overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200 shadow-sm">
-                                <img
-                                  src={ast.foto}
-                                  alt={ast.nome}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 text-[11px] font-bold border border-blue-200 badge-pulse">
-                                    Vaga Aberta
-                                  </span>
-                                  <span className="text-sm font-bold text-neutral-900">
-                                    R$ {ast.orcamentoHora}/h
-                                  </span>
-                                </div>
-
-                                <h3 className="text-base font-bold text-neutral-900 mt-1">
-                                  {ast.nome} ({ast.idade} anos)
-                                </h3>
-                                <p className="text-xs text-neutral-500 font-medium">
-                                  Família Contratante: {ast.familyName}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200 text-xs text-neutral-700 font-medium flex items-center gap-2 mb-3">
-                              <MapPin className="w-4 h-4 text-[#72b63f] flex-shrink-0" />
-                              <span>{ast.endereco}</span>
-                            </div>
-
-                            <div className="p-3.5 rounded-xl bg-neutral-50/50 border border-neutral-200 text-xs text-neutral-800 font-medium mb-3">
-                              <span className="font-bold text-neutral-900 block mb-1">
-                                Necessidades do Cuidado:
-                              </span>
-                              {ast.necessidades}
-                            </div>
-
-                            <div className="flex flex-wrap gap-1.5 mb-4">
-                              {ast.comorbidades.map((c, i) => (
-                                <span
-                                  key={i}
-                                  className="px-2.5 py-0.5 rounded-md bg-[#02a9b5]/10 text-[#028490] text-[10px] font-bold border border-[#02a9b5]/20"
-                                >
-                                  {c}
-                                </span>
-                              ))}
-                            </div>
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  {availableOpportunities.map((ast, index) => (
+                    <div
+                      key={ast.id}
+                      style={{ animationDelay: `${index * 80}ms` }}
+                      className="stagger-card interactive-card rounded-2xl bg-white p-6 shadow-sm border border-neutral-200 flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className="w-14 h-14 rounded-2xl overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200 shadow-sm">
+                            <img
+                              src={ast.foto}
+                              alt={ast.nome}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
-
-                          <div className="pt-3 border-t border-neutral-100 flex items-center justify-between gap-2">
-                            <span className="text-xs text-neutral-500 font-medium">
-                              Frequência: <strong>{ast.frequenciaPretendida}</strong>
-                            </span>
-                            <button
-                              onClick={() => openApplyOpportunity(ast)}
-                              className="px-4 py-2 rounded-xl bg-[#02a9b5] hover:bg-[#028490] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 active:scale-98"
-                            >
-                              <Send className="w-3.5 h-3.5" />
-                              Propor Atendimento
-                            </button>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+                                🟡 Vaga em Aberto
+                              </span>
+                              <span className="text-xs text-neutral-500 font-medium flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-neutral-400" />
+                                {ast.bairro}
+                              </span>
+                            </div>
+                            <h3 className="text-base font-bold text-neutral-900">
+                              {ast.nome} ({ast.idade} anos)
+                            </h3>
+                            <p className="text-xs text-neutral-500 font-medium">
+                              Contratante: <strong>{ast.familyName}</strong> ({ast.parentesco})
+                            </p>
                           </div>
                         </div>
-                      ))}
+
+                        <div className="p-3.5 rounded-xl bg-neutral-50/50 border border-neutral-200 text-xs text-neutral-800 font-medium mb-3">
+                          <span className="font-bold text-neutral-900 block mb-1">
+                            Necessidades do Cuidado:
+                          </span>
+                          {ast.necessidades}
+                        </div>
+
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          {ast.comorbidades.map((c, i) => (
+                            <span
+                              key={i}
+                              className="px-2.5 py-0.5 rounded-md bg-[#02a9b5]/10 text-[#028490] text-[10px] font-bold border border-[#02a9b5]/20"
+                            >
+                              {c}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-neutral-100 flex items-center justify-between gap-2">
+                        <span className="text-xs text-neutral-500 font-medium">
+                          Frequência: <strong>{ast.frequenciaPretendida}</strong>
+                        </span>
+                        <button
+                          onClick={() => openApplyOpportunity(ast)}
+                          className="px-4 py-2 rounded-xl bg-[#02a9b5] hover:bg-[#028490] text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 active:scale-98"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          Propor Atendimento
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </>
+                  ))}
+                </div>
               )}
             </motion.div>
           )}
