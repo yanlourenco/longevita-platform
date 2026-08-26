@@ -32,7 +32,8 @@ import {
   Stethoscope,
   FileCheck,
   Layers,
-  Menu
+  Menu,
+  RefreshCw
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import NotificationCenter from "@/components/NotificationCenter";
@@ -44,17 +45,22 @@ export default function AdminPage() {
     setUserRole,
     caregivers,
     contracts,
+    assistidos,
+    terminateContract,
     approveCaregiver,
-    triggerDemoAlert
+    triggerDemoAlert,
+    resetToDefaultData
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<"visao_geral" | "cuidadores" | "contratos" | "auditoria">("visao_geral");
+  const [activeTab, setActiveTab] = useState<"visao_geral" | "cuidadores" | "contratos" | "assistidos" | "auditoria">("visao_geral");
   const [searchTerm, setSearchTerm] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Métricas executivas
   const totalCaregivers = caregivers.length;
   const activeContractsCount = contracts.filter((c) => c.status === "ativo").length;
+  const linkedAssistidosCount = assistidos.filter((a) => a.status === "vinculada").length;
+  const availableAssistidosCount = assistidos.filter((a) => a.status === "disponivel").length;
   const totalVolumeEstimado = contracts.reduce((acc, c) => acc + c.hourlyRate * 160, 0);
 
   return (
@@ -177,6 +183,26 @@ export default function AdminPage() {
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700">
                   {contracts.length}
+                </span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveTab("assistidos");
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === "assistidos"
+                    ? "bg-neutral-900 text-white shadow-sm"
+                    : "text-neutral-600 hover:bg-neutral-100"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Heart className="w-4 h-4 text-rose-500" />
+                  <span>Assistidos & Famílias</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700">
+                  {assistidos.length}
                 </span>
               </button>
 
@@ -432,10 +458,10 @@ export default function AdminPage() {
             >
               <div>
                 <h2 className="text-xl font-bold text-neutral-900">
-                  Contratos & Vínculos Formalizados
+                  Contratos & Vínculos Formalizados ({contracts.length})
                 </h2>
                 <p className="text-xs text-neutral-500 font-medium">
-                  Rastreabilidade e consentimento sob a LGPD.
+                  Rastreabilidade, consentimento LGPD e controle de encerramento em tempo real.
                 </p>
               </div>
 
@@ -443,7 +469,7 @@ export default function AdminPage() {
                 {contracts.map((contract) => (
                   <div
                     key={contract.id}
-                    className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 interactive-card"
                   >
                     <div>
                       <div className="flex items-center gap-2 mb-1">
@@ -451,10 +477,16 @@ export default function AdminPage() {
                           className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                             contract.status === "ativo"
                               ? "bg-[#72b63f]/10 text-[#558a2e] border-[#72b63f]/25"
-                              : "bg-amber-50 text-amber-800 border-amber-200"
+                              : contract.status === "pendente"
+                              ? "bg-amber-50 text-amber-800 border-amber-200"
+                              : "bg-rose-50 text-rose-800 border-rose-200"
                           }`}
                         >
-                          {contract.status === "ativo" ? "Contrato Ativo" : "Proposta em Análise"}
+                          {contract.status === "ativo"
+                            ? "Contrato Ativo • Homologado"
+                            : contract.status === "pendente"
+                            ? "Proposta em Análise"
+                            : "Vínculo Encerrado"}
                         </span>
                         <span className="text-xs text-neutral-400 font-medium">{contract.createdAt}</span>
                       </div>
@@ -463,13 +495,25 @@ export default function AdminPage() {
                         {contract.patientName} ↔ Profissional {contract.caregiverName}
                       </h3>
                       <p className="text-xs text-neutral-600 mt-0.5 font-medium">
-                        Contratante: {contract.familyName} • Local: {contract.patientAddress}
+                        Contratante: <strong>{contract.familyName}</strong> • Escala: {contract.frequency} • Local: {contract.patientAddress}
                       </p>
                     </div>
 
-                    <div className="text-right flex-shrink-0">
-                      <span className="text-lg font-bold text-neutral-900">R$ {contract.hourlyRate}/h</span>
-                      <span className="text-xs text-[#558a2e] block font-medium">Termo LGPD Assinado</span>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="text-right">
+                        <span className="text-lg font-bold text-neutral-900">R$ {contract.hourlyRate}/h</span>
+                        <span className="text-xs text-[#558a2e] block font-medium">Termo LGPD Assinado</span>
+                      </div>
+
+                      {contract.status === "ativo" && (
+                        <button
+                          onClick={() => terminateContract(contract.id)}
+                          className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold border border-rose-200 transition-colors"
+                          title="Encerrar Vínculo e Liberar Disponibilidade"
+                        >
+                          Encerrar
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -477,19 +521,108 @@ export default function AdminPage() {
             </motion.div>
           )}
 
-          {/* ABA 4: SIMULADOR DE EVENTOS */}
-          {activeTab === "auditoria" && (
+          {/* ABA 4: ASSISTIDOS & FAMÍLIAS */}
+          {activeTab === "assistidos" && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="space-y-4"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-bold text-neutral-900">
+                    Base Consolidada de Assistidos ({assistidos.length})
+                  </h2>
+                  <p className="text-xs text-neutral-500 font-medium">
+                    Monitoramento clínico, prontuários ativos e status de atendimento no ecossistema.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-xl bg-[#72b63f]/10 text-[#558a2e] text-xs font-bold border border-[#72b63f]/25">
+                    {linkedAssistidosCount} Vinculados
+                  </span>
+                  <span className="px-3 py-1 rounded-xl bg-blue-50 text-blue-800 text-xs font-bold border border-blue-200">
+                    {availableAssistidosCount} Buscando Cuidador
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                {assistidos.map((ast) => (
+                  <div
+                    key={ast.id}
+                    className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 interactive-card"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200">
+                        <img src={ast.foto} alt={ast.nome} className="w-full h-full object-cover" />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-neutral-900">{ast.nome} ({ast.idade} anos)</span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                              ast.status === "vinculada"
+                                ? "bg-[#72b63f]/10 text-[#558a2e] border-[#72b63f]/20"
+                                : ast.status === "em_negociacao"
+                                ? "bg-amber-50 text-amber-800 border-amber-200"
+                                : "bg-blue-50 text-blue-800 border-blue-200"
+                            }`}
+                          >
+                            {ast.status === "vinculada"
+                              ? `Vinculado a ${ast.cuidadorVinculadoNome || "Cuidador"}`
+                              : ast.status === "em_negociacao"
+                              ? "Proposta em Análise"
+                              : "Disponível para Atendimento"}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-neutral-500 font-medium mt-0.5">
+                          {ast.familyName} • {ast.endereco} • Orçamento: R$ {ast.orcamentoHora}/h
+                        </p>
+
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {ast.comorbidades.map((c, i) => (
+                            <span
+                              key={i}
+                              className="px-2 py-0.5 rounded bg-neutral-100 text-[10px] font-semibold text-neutral-700"
+                            >
+                              {c}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-xs font-bold text-neutral-800 block">
+                        PA: {ast.sinaisVitais?.pressao}
+                      </span>
+                      <span className="text-[11px] text-neutral-500">
+                        Glicemia: {ast.sinaisVitais?.glicemia}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ABA 5: SIMULADOR DE EVENTOS */}
+          {activeTab === "auditoria" && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
             >
               <div>
                 <h2 className="text-xl font-bold text-neutral-900">
                   Simulador de Eventos em Tempo Real
                 </h2>
                 <p className="text-xs text-neutral-500 font-medium">
-                  Acione os botões de simulação para testar a reatividade de notificações e diário de bordo.
+                  Acione os botões de simulação para testar a reatividade de notificações, vínculos e integridade operacional.
                 </p>
               </div>
 
@@ -501,7 +634,7 @@ export default function AdminPage() {
                       "A cuidadora Ana Silva realizou o check-in presencial no endereço de Dona Helena (Geofencing e horário validados)."
                     )
                   }
-                  className="p-5 rounded-2xl bg-white hover:bg-[#72b63f]/5 border border-neutral-200 hover:border-[#72b63f]/40 text-left transition-all group shadow-sm"
+                  className="p-5 rounded-2xl bg-white hover:bg-[#72b63f]/5 border border-neutral-200 hover:border-[#72b63f]/40 text-left transition-all group shadow-sm interactive-card"
                 >
                   <div className="w-9 h-9 rounded-xl bg-[#72b63f]/10 text-[#558a2e] flex items-center justify-center mb-3">
                     <MapPin className="w-4 h-4" />
@@ -521,7 +654,7 @@ export default function AdminPage() {
                       "Pressão arterial de Dona Helena aferida: 12x8 mmHg. Glicemia de jejum: 98 mg/dL (Estável)."
                     )
                   }
-                  className="p-5 rounded-2xl bg-white hover:bg-[#02a9b5]/5 border border-neutral-200 hover:border-[#02a9b5]/40 text-left transition-all group shadow-sm"
+                  className="p-5 rounded-2xl bg-white hover:bg-[#02a9b5]/5 border border-neutral-200 hover:border-[#02a9b5]/40 text-left transition-all group shadow-sm interactive-card"
                 >
                   <div className="w-9 h-9 rounded-xl bg-[#02a9b5]/10 text-[#028490] flex items-center justify-center mb-3">
                     <Activity className="w-4 h-4" />
@@ -541,7 +674,7 @@ export default function AdminPage() {
                       "Losartana 50mg administrada pontualmente às 12:00 com registro no plano de cuidados."
                     )
                   }
-                  className="p-5 rounded-2xl bg-white hover:bg-neutral-50 border border-neutral-200 text-left transition-all group shadow-sm"
+                  className="p-5 rounded-2xl bg-white hover:bg-neutral-50 border border-neutral-200 text-left transition-all group shadow-sm interactive-card"
                 >
                   <div className="w-9 h-9 rounded-xl bg-neutral-100 text-neutral-700 flex items-center justify-center mb-3">
                     <Clock className="w-4 h-4" />
@@ -561,7 +694,7 @@ export default function AdminPage() {
                       "A Família Albuquerque enviou uma proposta de plantão noturno (R$ 48/hora)."
                     )
                   }
-                  className="p-5 rounded-2xl bg-white hover:bg-[#02a9b5]/5 border border-neutral-200 hover:border-[#02a9b5]/40 text-left transition-all group shadow-sm"
+                  className="p-5 rounded-2xl bg-white hover:bg-[#02a9b5]/5 border border-neutral-200 hover:border-[#02a9b5]/40 text-left transition-all group shadow-sm interactive-card"
                 >
                   <div className="w-9 h-9 rounded-xl bg-[#02a9b5]/10 text-[#028490] flex items-center justify-center mb-3">
                     <HeartHandshake className="w-4 h-4" />
@@ -572,6 +705,26 @@ export default function AdminPage() {
                   <p className="text-xs text-neutral-600 mt-1">
                     Exibe a notificação com botões de Aceitar/Recusar.
                   </p>
+                </button>
+              </div>
+
+              {/* Botão de Reset do Ecossistema */}
+              <div className="pt-6 border-t border-neutral-200 flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-700">
+                    Controle de Estado de Demonstração
+                  </h4>
+                  <p className="text-xs text-neutral-500">
+                    Restaura os vínculos iniciais, assistidos e cuidadores originais limpando o LocalStorage.
+                  </p>
+                </div>
+
+                <button
+                  onClick={resetToDefaultData}
+                  className="px-4 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-98"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Restaurar Ecossistema Padrão
                 </button>
               </div>
             </motion.div>

@@ -163,6 +163,11 @@ export default function NotificationCenter() {
                             <Star className="w-3.5 h-3.5" />
                           </div>
                         )}
+                        {notif.type === "vinculo_encerrado" && (
+                          <div className="w-6 h-6 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center flex-shrink-0">
+                            <HeartHandshake className="w-3.5 h-3.5" />
+                          </div>
+                        )}
                         <h4 className="text-xs font-bold text-neutral-900">{notif.title}</h4>
                       </div>
 

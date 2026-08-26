@@ -48,6 +48,7 @@ export default function AddCaregiverModal({ isOpen, onClose }: AddCaregiverModal
       antecedentesChecados: true,
       formacaoVerificada: true,
       disponibilidade,
+      disponivel: true,
       habilidades: habilidades.length ? habilidades : ["Cuidado Geriátrico"],
     });
 

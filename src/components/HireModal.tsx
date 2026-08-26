@@ -1,19 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, HeartHandshake, ShieldCheck, Calendar, Clock, ArrowRight } from "lucide-react";
+import { X, HeartHandshake, ShieldCheck, Calendar, Clock, ArrowRight, User } from "lucide-react";
 import { useApp, Caregiver } from "@/context/AppContext";
 
 interface HireModalProps {
   caregiver: Caregiver | null;
   isOpen: boolean;
   onClose: () => void;
+  onSuccessAnimation?: (caregiverId: string) => void;
 }
 
-export default function HireModal({ caregiver, isOpen, onClose }: HireModalProps) {
-  const { sendContractProposal } = useApp();
+export default function HireModal({ caregiver, isOpen, onClose, onSuccessAnimation }: HireModalProps) {
+  const { sendContractProposal, assistidos } = useApp();
 
+  const [selectedAssistidoId, setSelectedAssistidoId] = useState<string>("ast-1");
   const [patientName, setPatientName] = useState("Dona Helena Ribeiro de Castro");
   const [patientAge, setPatientAge] = useState("78");
   const [patientAddress, setPatientAddress] = useState("Rua Oscar Freire, 1420 - Jardins, São Paulo");
@@ -21,15 +23,32 @@ export default function HireModal({ caregiver, isOpen, onClose }: HireModalProps
   const [careNeeds, setCareNeeds] = useState("Acompanhamento de rotina, aferição de pressão 2x/dia e auxílio com alimentação.");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (selectedAssistidoId && selectedAssistidoId !== "custom") {
+      const ast = assistidos.find((a) => a.id === selectedAssistidoId);
+      if (ast) {
+        setPatientName(ast.nome);
+        setPatientAge(String(ast.idade));
+        setPatientAddress(ast.endereco);
+        setCareNeeds(ast.necessidades);
+      }
+    }
+  }, [selectedAssistidoId, assistidos]);
+
   if (!isOpen || !caregiver) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
+    if (onSuccessAnimation) {
+      onSuccessAnimation(caregiver.id);
+    }
+
     sendContractProposal({
       caregiverId: caregiver.id,
       caregiverName: caregiver.nome,
+      assistidoId: selectedAssistidoId !== "custom" ? selectedAssistidoId : undefined,
       patientName,
       patientAge: Number(patientAge) || 75,
       patientAddress,
@@ -81,6 +100,26 @@ export default function HireModal({ caregiver, isOpen, onClose }: HireModalProps
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
+            {assistidos.length > 0 && (
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-900 mb-1">
+                  Selecionar Familiar Cadastrado
+                </label>
+                <select
+                  value={selectedAssistidoId}
+                  onChange={(e) => setSelectedAssistidoId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-50 border border-neutral-300 text-xs text-neutral-900 font-bold outline-none focus:border-[#72b63f]"
+                >
+                  {assistidos.map((ast) => (
+                    <option key={ast.id} value={ast.id}>
+                      {ast.nome} ({ast.idade} anos - {ast.bairro || "São Paulo"})
+                    </option>
+                  ))}
+                  <option value="custom">+ Outro Assistido (Digitar dados manualmente)</option>
+                </select>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-neutral-900 mb-1">
                 Nome do Familiar Assistido *
