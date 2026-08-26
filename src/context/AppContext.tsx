@@ -96,7 +96,7 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Dados Iniciais Ricos
+// Dados Iniciais Profissionais
 const INITIAL_CAREGIVERS: Caregiver[] = [
   {
     id: "cg-1",
@@ -108,7 +108,7 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
     avaliacoesQtd: 42,
     valorHora: 45,
     foto: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=600&auto=format&fit=crop",
-    biografia: "Enfermeira padrão com mais de 8 anos de experiência em cuidados intensivos domiciliares de alta complexidade. Focada em atendimento humanizado e rotinas estruturadas.",
+    biografia: "Enfermeira padrão com mais de 8 anos de experiência em cuidados intensivos domiciliares de alta complexidade. Focada em atendimento humanizado, estímulo cognitivo e rotinas estruturadas de reabilitação.",
     antecedentesChecados: true,
     formacaoVerificada: true,
     statusAprovacao: "aprovado",
@@ -122,8 +122,8 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
         authorRelation: "Filha da Dona Helena",
         date: "Há 3 dias",
         rating: 5,
-        comment: "A Ana cuidou da minha mãe com um carinho e dedicação impecáveis. Muito pontual e atenta a cada detalhe das medicações.",
-        tags: ["Especialista em Alzheimer", "Muito Pontual", "Carinhosa"]
+        comment: "A Ana cuidou da minha mãe com um carinho e dedicação impecáveis. Muito pontual e atenta a cada detalhe das medicações prescritas.",
+        tags: ["Especialista em Alzheimer", "Pontualidade Rigorosa", "Atendimento Humanizado"]
       },
       {
         id: "rev-2",
@@ -132,8 +132,8 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
         authorRelation: "Filho de paciente",
         date: "Há 2 semanas",
         rating: 4.9,
-        comment: "Excelente profissional. Nos deu total tranquilidade durante o pós-operatório do meu pai.",
-        tags: ["Competência Técnica", "Paciente", "Comunicação Clara"]
+        comment: "Excelente profissional. Nos deu total tranquilidade durante o pós-operatório do meu pai, controlando sinais vitais com precisão.",
+        tags: ["Competência Técnica", "Paciência", "Comunicação Clara"]
       }
     ]
   },
@@ -147,7 +147,7 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
     avaliacoesQtd: 35,
     valorHora: 38,
     foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop",
-    biografia: "Técnico de enfermagem dedicado a atividades recreativas, mobilidade e auxílio em rotinas diárias. Paciente, pontual e certificado em primeiros socorros geriátricos.",
+    biografia: "Técnico de enfermagem dedicado a atividades de mobilidade, caminhada supervisionada e auxílio em rotinas diárias. Paciente, pontual e certificado em primeiros socorros geriátricos.",
     antecedentesChecados: true,
     formacaoVerificada: true,
     statusAprovacao: "aprovado",
@@ -161,8 +161,8 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
         authorRelation: "Neto de paciente",
         date: "Há 1 semana",
         rating: 5,
-        comment: "O Carlos conseguiu motivar meu avô a fazer os exercícios de fisioterapia e caminhar no jardim. Nota 10!",
-        tags: ["Reabilitação Motora", "Paciente", "Pontual"]
+        comment: "O Carlos conseguiu motivar meu avô a realizar os exercícios de fisioterapia e caminhar diariamente. Excelente suporte!",
+        tags: ["Reabilitação Motora", "Paciência", "Pontualidade"]
       }
     ]
   },
@@ -190,8 +190,8 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
         authorRelation: "Sobrinha de paciente",
         date: "Há 5 dias",
         rating: 5,
-        comment: "Profissional extremamente capacitada e carinhosa. Os curativos cicatrizaram perfeitamente graças aos cuidados dela.",
-        tags: ["Curativos Perfeitos", "Competência Técnica", "Atenciosa"]
+        comment: "Profissional extremamente capacitada. Os curativos cicatrizaram com rapidez e perfeição graças ao rigor técnico dela.",
+        tags: ["Curativos Avançados", "Rigor Técnico", "Atenção Plena"]
       }
     ]
   }
@@ -236,8 +236,8 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
     id: "notif-1",
     targetRole: "family",
-    title: "Plantão em Andamento 🟢",
-    message: "Ana Silva realizou check-in presencial no endereço da Dona Helena (Geofencing OK).",
+    title: "Plantão Presencial em Andamento",
+    message: "Ana Silva realizou check-in presencial no endereço de Dona Helena com validação de geolocalização.",
     time: "Hoje às 08:05",
     read: false,
     type: "plantao_iniciado",
@@ -248,7 +248,7 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
     id: "notif-2",
     targetRole: "caregiver",
-    title: "Nova Solicitação de Vínculo",
+    title: "Nova Solicitação de Vínculo Contratual",
     message: "A Família Silveira enviou uma proposta de plantão diurno para Seu Roberto (R$ 38/h).",
     time: "Hoje às 09:15",
     read: false,
@@ -262,7 +262,7 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { success, info, error: toastError } = useToast();
 
-  const [userRole, setUserRole] = useState<"family" | "caregiver" | "admin">("admin");
+  const [userRole, setUserRole] = useState<"family" | "caregiver" | "admin">("family");
   const [caregivers, setCaregivers] = useState<Caregiver[]>(INITIAL_CAREGIVERS);
   const [contracts, setContracts] = useState<Contract[]>(INITIAL_CONTRACTS);
   const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
@@ -303,12 +303,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     setContracts((prev) => [newContract, ...prev]);
 
-    // Cria notificação para o Cuidador
     const newNotif: AppNotification = {
       id: `notif-${Date.now()}`,
       targetRole: "caregiver",
-      title: "Nova Solicitação de Contratação!",
-      message: `Proposta recebida para cuidar de ${data.patientName} (${data.frequency} - R$ ${data.hourlyRate}/h).`,
+      title: "Nova Solicitação de Contratação",
+      message: `Proposta recebida para o acompanhamento de ${data.patientName} (${data.frequency} - R$ ${data.hourlyRate}/h).`,
       time: "Agora mesmo",
       read: false,
       type: "solicitacao",
@@ -319,7 +318,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     setNotifications((prev) => [newNotif, ...prev]);
-    success("Proposta de Vínculo Enviada!", `O cuidador ${data.caregiverName} recebeu a notificação com os botões de Aceitar/Recusar.`);
+    success("Proposta de Vínculo Enviada", `O profissional ${data.caregiverName} recebeu a notificação com os termos contratuais.`);
   };
 
   // 2. Cuidador Aceita o Vínculo
@@ -333,8 +332,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const newNotif: AppNotification = {
       id: `notif-${Date.now()}`,
       targetRole: "family",
-      title: "Proposta Aceita! 🎉",
-      message: `${contract?.caregiverName || "O cuidador"} aceitou sua proposta de contratação para ${contract?.patientName}. O vínculo está ativo sob conformidade LGPD.`,
+      title: "Proposta de Contrato Aprovada",
+      message: `${contract?.caregiverName || "O cuidador"} aceitou a proposta de atendimento para ${contract?.patientName}. O vínculo está formalizado sob conformidade LGPD.`,
       time: "Agora mesmo",
       read: false,
       type: "resposta_aceita",
@@ -344,7 +343,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     setNotifications((prev) => [newNotif, ...prev]);
-    success("Vínculo Aprovado!", "O contrato está ativo e a família foi notificada imediatamente.");
+    success("Vínculo Contratual Ativado", "O contrato foi homologado e a família foi informada.");
   };
 
   // 3. Cuidador Recusa o Vínculo
@@ -358,8 +357,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const newNotif: AppNotification = {
       id: `notif-${Date.now()}`,
       targetRole: "family",
-      title: "Proposta Recusada",
-      message: `${contract?.caregiverName || "O cuidador"} não possui disponibilidade para o período solicitado.`,
+      title: "Indisponibilidade Informada",
+      message: `${contract?.caregiverName || "O cuidador"} não possui disponibilidade na grade de horários solicitada.`,
       time: "Agora mesmo",
       read: false,
       type: "resposta_recusada",
@@ -369,7 +368,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     setNotifications((prev) => [newNotif, ...prev]);
-    info("Proposta Recusada", "A família foi informada da indisponibilidade.");
+    info("Proposta Recusada", "A família foi informada da indisponibilidade na agenda.");
   };
 
   // 4. Iniciar Plantão
@@ -383,8 +382,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const newNotif: AppNotification = {
       id: `notif-${Date.now()}`,
       targetRole: "family",
-      title: "Plantão Iniciado 🟢",
-      message: `${contract?.caregiverName} iniciou o atendimento de ${contract?.patientName} (Geofencing validado).`,
+      title: "Início de Plantão Presencial",
+      message: `${contract?.caregiverName} iniciou o atendimento de ${contract?.patientName} (Geofencing e horário validados).`,
       time: "Agora mesmo",
       read: false,
       type: "plantao_iniciado",
@@ -394,7 +393,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     setNotifications((prev) => [newNotif, ...prev]);
-    success("Plantão Iniciado!", "Geolocalização validada e família notificada.");
+    success("Plantão Registrado", "Check-in presencial confirmado com sucesso.");
   };
 
   // 5. Encerrar Plantão
@@ -408,8 +407,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const newNotif: AppNotification = {
       id: `notif-${Date.now()}`,
       targetRole: "family",
-      title: "Plantão Concluído com Sucesso ✅",
-      message: `${contract?.caregiverName} finalizou o turno com relatório completo no Diário de Bordo. Que tal deixar uma avaliação?`,
+      title: "Plantão Concluído",
+      message: `${contract?.caregiverName} finalizou o turno de atendimento. O relatório completo está disponível no Diário de Bordo.`,
       time: "Agora mesmo",
       read: false,
       type: "plantao_encerrado",
@@ -419,7 +418,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     };
 
     setNotifications((prev) => [newNotif, ...prev]);
-    success("Plantão Finalizado!", "Relatório diário salvo com sucesso.");
+    success("Plantão Concluído", "Relatório de rotina salvo no Diário de Bordo.");
   };
 
   // 6. Cadastro de Novo Cuidador com Atualização Reativa Imediata
@@ -436,18 +435,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         {
           id: `rev-init-${Date.now()}`,
           caregiverId: `cg-${Date.now()}`,
-          authorName: "Equipe LongeVita",
-          authorRelation: "Validação Oficial",
+          authorName: "Auditoria LongeVita",
+          authorRelation: "Homologação Técnica",
           date: "Hoje",
           rating: 5,
-          comment: "Profissional credenciado com antecedentes criminais e certificados 100% verificados.",
-          tags: ["Verificação Oficial", "Documentação OK"]
+          comment: "Profissional credenciado com antecedentes criminais e certificados técnicos verificados.",
+          tags: ["Verificação Oficial", "Certificação Validada"]
         }
       ]
     };
 
     setCaregivers((prev) => [created, ...prev]);
-    success("Cuidador Cadastrado!", `${created.nome} foi adicionado(a) e a listagem foi atualizada em tempo real.`);
+    success("Profissional Cadastrado", `${created.nome} foi adicionado(a) e está visível na plataforma.`);
   };
 
   // 7. Envio de Feedback e Avaliação
@@ -478,15 +477,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const newNotif: AppNotification = {
       id: `notif-${Date.now()}`,
       targetRole: "caregiver",
-      title: "Nova Avaliação Recebida! ⭐",
-      message: `${reviewData.authorName} avaliou seu atendimento com nota ${reviewData.rating.toFixed(1)} estrelas: "${reviewData.comment}"`,
+      title: "Nova Avaliação Recebida",
+      message: `${reviewData.authorName} publicou uma avaliação de ${reviewData.rating.toFixed(1)} estrelas sobre o seu atendimento.`,
       time: "Agora mesmo",
       read: false,
       type: "feedback_recebido"
     };
 
     setNotifications((prev) => [newNotif, ...prev]);
-    success("Avaliação Publicada!", "Obrigado por ajudar a fortalecer o ecossistema LongeVita.");
+    success("Avaliação Registrada", "Obrigado por contribuir com a qualidade do cuidado LongeVita.");
   };
 
   // 8. Aprovação Administrativa de Cuidador
@@ -498,7 +497,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           : cg
       )
     );
-    success("Cuidador Homologado!", "Antecedentes validados e status aprovado na plataforma.");
+    success("Cuidador Homologado", "Antecedentes e credenciais técnicas validados.");
   };
 
   // 9. Gatilho de Alerta para Demonstração Executiva

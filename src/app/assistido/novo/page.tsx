@@ -513,11 +513,14 @@ export default function NovoAssistidoPage() {
               </div>
 
               <div className="space-y-8">
-                {/* 🔍 CAMPO DE BUSCA INTELIGENTE (AUTOSUGGEST / AUTOCOMPLETE) */}
+                {/* CAMPO DE BUSCA INTELIGENTE (AUTOSUGGEST / AUTOCOMPLETE) */}
                 <div className="relative">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5 flex items-center justify-between">
-                    <span>🔍 Busca Preditiva de Condições & Comorbidades</span>
-                    <span className="text-[#02a9b5] text-xs font-semibold">Sugestões automáticas</span>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-800 mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Search className="w-3.5 h-3.5 text-[#02a9b5]" />
+                      Busca Preditiva de Condições & Comorbidades
+                    </span>
+                    <span className="text-[#02a9b5] text-xs font-bold">Catálogo Clínico</span>
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-500">
