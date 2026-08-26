@@ -222,6 +222,13 @@ export default function DashboardPage() {
 
           {/* Ações, Notificações e Desconectar */}
           <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/admin"
+              className="text-xs font-black text-white bg-neutral-900 hover:bg-neutral-800 px-3 py-2 rounded-xl shadow-sm transition-all flex items-center gap-1"
+            >
+              👑 ADM Master
+            </Link>
+
             {/* Central de Notificações Reativa com Badge */}
             <NotificationCenter />
 

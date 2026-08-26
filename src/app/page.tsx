@@ -206,16 +206,22 @@ export default function HomePage() {
       <header className="px-4 sm:px-8 py-5 max-w-7xl mx-auto w-full flex items-center justify-between border-b border-neutral-200 bg-white/90 backdrop-blur-xl sticky top-0 z-40">
         <Logo size="md" />
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/admin"
+            className="text-xs font-black text-white bg-neutral-900 hover:bg-neutral-800 px-3.5 py-2.5 rounded-2xl shadow-sm transition-all flex items-center gap-1"
+          >
+            👑 Acesso ADM / Demo
+          </Link>
           <Link
             href="/login"
-            className="text-xs sm:text-sm font-extrabold text-neutral-800 hover:text-neutral-950 px-4 py-2.5 rounded-2xl hover:bg-neutral-100 border border-neutral-200 transition-colors"
+            className="text-xs sm:text-sm font-extrabold text-neutral-800 hover:text-neutral-950 px-3.5 py-2.5 rounded-2xl hover:bg-neutral-100 border border-neutral-200 transition-colors"
           >
-            Já sou cadastrado / Entrar
+            Entrar
           </Link>
           <Link
             href="/cadastro/cuidador"
-            className="hidden sm:inline-flex text-xs font-extrabold text-[#02a9b5] bg-cyan-50 hover:bg-cyan-100 border border-cyan-300 px-4 py-2.5 rounded-2xl transition-colors"
+            className="hidden sm:inline-flex text-xs font-extrabold text-[#02a9b5] bg-cyan-50 hover:bg-cyan-100 border border-cyan-300 px-3.5 py-2.5 rounded-2xl transition-colors"
           >
             Sou Cuidador(a)
           </Link>

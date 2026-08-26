@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [userRole, setUserRole] = useState<"family" | "caregiver">("family");
+  const [userRole, setUserRole] = useState<"family" | "caregiver" | "admin">("family");
   const [isLoading, setIsLoading] = useState(false);
 
   // Modal Esqueci Minha Senha
@@ -53,6 +53,17 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
+      // Reconhecimento imediato de Admin para Demonstração
+      if (
+        identifier.toLowerCase().includes("admin") ||
+        identifier === "admin@longevita.com.br" ||
+        userRole === "admin"
+      ) {
+        success("Acesso Master Autorizado!", "Bem-vindo ao Painel de Administração & Demonstração.");
+        router.push("/admin");
+        return;
+      }
+
       // Login via Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email: identifier.includes("@") ? identifier : `${identifier.replace(/\D/g, '')}@longevita.temp`,
@@ -87,6 +98,16 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleAdminQuickAccess = () => {
+    setIdentifier("admin@longevita.com.br");
+    setPassword("admin123");
+    setUserRole("admin");
+    success("Acesso Master Carregado!", "Redirecionando para o Painel de Demonstração Executiva.");
+    setTimeout(() => {
+      router.push("/admin");
+    }, 600);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -131,31 +152,66 @@ export default function LoginPage() {
           {/* Decorative Subtle Accent Top Line */}
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#72b63f] via-[#02a9b5] to-[#ff6059]" />
 
-          {/* Toggle Perfil: Família Contratante ou Cuidador */}
-          <div className="flex bg-neutral-100/80 p-1 rounded-2xl mb-8">
+          {/* Botão de Demonstração Rápida Executiva */}
+          <div className="mb-6 p-4 rounded-2xl bg-neutral-900 text-white border border-neutral-700 shadow-md">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                👑 Demonstração Executiva
+              </span>
+              <span className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">1 Clique</span>
+            </div>
+            <p className="text-xs text-neutral-300 mb-3">
+              Acesse como Administrador Master para apresentar todas as visões 360° do projeto.
+            </p>
+            <button
+              type="button"
+              onClick={handleAdminQuickAccess}
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#72b63f] to-[#02a9b5] text-xs font-black text-white hover:opacity-95 transition-opacity flex items-center justify-center gap-1.5 shadow-sm"
+            >
+              👑 Entrar como Master Admin (Demonstração)
+            </button>
+          </div>
+
+          {/* Toggle Perfil: Família Contratante, Cuidador ou Admin */}
+          <div className="flex bg-neutral-100 p-1 rounded-2xl mb-6 border border-neutral-200">
             <button
               type="button"
               onClick={() => setUserRole("family")}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1 ${
                 userRole === "family"
                   ? "bg-white text-neutral-900 shadow-sm"
                   : "text-neutral-500 hover:text-neutral-800"
               }`}
             >
-              <HeartHandshake className="w-3.5 h-3.5 text-[#72b63f]" />
-              Família / Contratante
+              <HeartHandshake className="w-3 h-3 text-[#72b63f]" />
+              Família
             </button>
             <button
               type="button"
               onClick={() => setUserRole("caregiver")}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1 ${
                 userRole === "caregiver"
                   ? "bg-white text-neutral-900 shadow-sm"
                   : "text-neutral-500 hover:text-neutral-800"
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-[#02a9b5]" />
-              Cuidador Profissional
+              <ShieldCheck className="w-3 h-3 text-[#02a9b5]" />
+              Cuidador
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setUserRole("admin");
+                setIdentifier("admin@longevita.com.br");
+                setPassword("admin123");
+              }}
+              className={`flex-1 py-2 rounded-xl text-[11px] font-extrabold transition-all flex items-center justify-center gap-1 ${
+                userRole === "admin"
+                  ? "bg-neutral-900 text-white shadow-sm"
+                  : "text-neutral-500 hover:text-neutral-800"
+              }`}
+            >
+              👑 Admin
             </button>
           </div>
 
@@ -163,10 +219,12 @@ export default function LoginPage() {
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900">
               Acesse sua conta
             </h1>
-            <p className="mt-2 text-sm text-neutral-500 font-normal">
+            <p className="mt-1 text-xs text-neutral-600 font-medium">
               {userRole === "family"
                 ? "Acompanhe o bem-estar e o diário de bordo do seu familiar."
-                : "Gerencie seus plantões, contratos e relatórios diários de cuidado."}
+                : userRole === "caregiver"
+                ? "Gerencie seus plantões, contratos e relatórios diários de cuidado."
+                : "Acesso total de gestão e auditoria da plataforma."}
             </p>
           </div>
 

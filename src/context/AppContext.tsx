@@ -28,6 +28,7 @@ export interface Caregiver {
   biografia: string;
   antecedentesChecados: boolean;
   formacaoVerificada: boolean;
+  statusAprovacao?: "aprovado" | "pendente" | "rejeitado";
   disponibilidade: string;
   habilidades: string[];
   reviews: Review[];
@@ -52,12 +53,12 @@ export interface Contract {
 
 export interface AppNotification {
   id: string;
-  targetRole: "caregiver" | "family";
+  targetRole: "caregiver" | "family" | "admin";
   title: string;
   message: string;
   time: string;
   read: boolean;
-  type: "solicitacao" | "resposta_aceita" | "resposta_recusada" | "plantao_iniciado" | "plantao_encerrado" | "feedback_recebido";
+  type: "solicitacao" | "resposta_aceita" | "resposta_recusada" | "plantao_iniciado" | "plantao_encerrado" | "feedback_recebido" | "alerta_admin";
   contractId?: string;
   caregiverId?: string;
   caregiverName?: string;
@@ -65,8 +66,8 @@ export interface AppNotification {
 }
 
 interface AppContextType {
-  userRole: "family" | "caregiver";
-  setUserRole: (role: "family" | "caregiver") => void;
+  userRole: "family" | "caregiver" | "admin";
+  setUserRole: (role: "family" | "caregiver" | "admin") => void;
   caregivers: Caregiver[];
   contracts: Contract[];
   notifications: AppNotification[];
@@ -87,6 +88,8 @@ interface AppContextType {
   endShift: (contractId: string) => void;
   addCaregiver: (caregiver: Omit<Caregiver, "id" | "reviews">) => void;
   addReview: (caregiverId: string, review: Omit<Review, "id" | "caregiverId" | "date">) => void;
+  approveCaregiver: (caregiverId: string) => void;
+  triggerDemoAlert: (title: string, message: string) => void;
   markNotificationAsRead: (id: string) => void;
   markAllNotificationsAsRead: () => void;
 }
@@ -108,6 +111,7 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
     biografia: "Enfermeira padrão com mais de 8 anos de experiência em cuidados intensivos domiciliares de alta complexidade. Focada em atendimento humanizado e rotinas estruturadas.",
     antecedentesChecados: true,
     formacaoVerificada: true,
+    statusAprovacao: "aprovado",
     disponibilidade: "Plantão Diurno e Noturno",
     habilidades: ["Alzheimer", "Cuidados com Sonda", "Administração de Medicamentos", "Estímulo Cognitivo"],
     reviews: [
@@ -146,6 +150,7 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
     biografia: "Técnico de enfermagem dedicado a atividades recreativas, mobilidade e auxílio em rotinas diárias. Paciente, pontual e certificado em primeiros socorros geriátricos.",
     antecedentesChecados: true,
     formacaoVerificada: true,
+    statusAprovacao: "aprovado",
     disponibilidade: "Segunda a Sexta (Horário Comercial)",
     habilidades: ["Parkinson", "Mobilidade & Caminhada", "Primeiros Socorros", "Dieta Especial"],
     reviews: [
@@ -174,6 +179,7 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
     biografia: "Especialista em geriatria hospitalar e suporte domiciliar avançado. Vasta experiência no controle de sinais vitais, curativos complexos e adaptação de ambientes seguros.",
     antecedentesChecados: true,
     formacaoVerificada: true,
+    statusAprovacao: "aprovado",
     disponibilidade: "Finais de Semana & Plantões 24h",
     habilidades: ["Curativos Complexos", "Monitoramento de PA/Glicemia", "Apoio Psicoemocional"],
     reviews: [
@@ -207,6 +213,22 @@ const INITIAL_CONTRACTS: Contract[] = [
     createdAt: "Hoje às 08:00",
     hourlyRate: 45,
     shiftActive: true
+  },
+  {
+    id: "contrato-2",
+    caregiverId: "cg-2",
+    caregiverName: "Carlos Eduardo Mendes",
+    familyId: "fam-2",
+    familyName: "Família Silveira",
+    patientName: "Seu Roberto Albuquerque",
+    patientAge: 82,
+    patientAddress: "Av. Paulista, 900 - Bela Vista, São Paulo",
+    careNeeds: "Parkinson moderado, fisioterapia motora e caminhada supervisionada.",
+    frequency: "Plantão 12h Diurno",
+    status: "pendente",
+    createdAt: "Hoje às 09:15",
+    hourlyRate: 38,
+    shiftActive: false
   }
 ];
 
@@ -214,7 +236,7 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
   {
     id: "notif-1",
     targetRole: "family",
-    title: "Plantão em Andamento",
+    title: "Plantão em Andamento 🟢",
     message: "Ana Silva realizou check-in presencial no endereço da Dona Helena (Geofencing OK).",
     time: "Hoje às 08:05",
     read: false,
@@ -227,26 +249,28 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
     id: "notif-2",
     targetRole: "caregiver",
     title: "Nova Solicitação de Vínculo",
-    message: "A Família Albuquerque enviou uma proposta de plantão diurno para Dona Helena.",
-    time: "Hoje às 07:30",
+    message: "A Família Silveira enviou uma proposta de plantão diurno para Seu Roberto (R$ 38/h).",
+    time: "Hoje às 09:15",
     read: false,
     type: "solicitacao",
-    contractId: "contrato-1",
-    caregiverName: "Ana Silva",
-    patientName: "Dona Helena"
+    contractId: "contrato-2",
+    caregiverName: "Carlos Eduardo Mendes",
+    patientName: "Seu Roberto"
   }
 ];
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { success, info, error: toastError } = useToast();
 
-  const [userRole, setUserRole] = useState<"family" | "caregiver">("family");
+  const [userRole, setUserRole] = useState<"family" | "caregiver" | "admin">("admin");
   const [caregivers, setCaregivers] = useState<Caregiver[]>(INITIAL_CAREGIVERS);
   const [contracts, setContracts] = useState<Contract[]>(INITIAL_CONTRACTS);
   const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
 
   // Contador de não lidas para o papel ativo
-  const unreadCount = notifications.filter((n) => !n.read && (n.targetRole === userRole || n.targetRole === "family")).length;
+  const unreadCount = notifications.filter(
+    (n) => !n.read && (userRole === "admin" || n.targetRole === userRole || n.targetRole === "family")
+  ).length;
 
   // 1. Família envia proposta de vínculo para o Cuidador
   const sendContractProposal = (data: {
@@ -306,7 +330,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const contract = contracts.find((c) => c.id === contractId);
 
-    // Notificação para a família
     const newNotif: AppNotification = {
       id: `notif-${Date.now()}`,
       targetRole: "family",
@@ -332,7 +355,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const contract = contracts.find((c) => c.id === contractId);
 
-    // Notificação para a família
     const newNotif: AppNotification = {
       id: `notif-${Date.now()}`,
       targetRole: "family",
@@ -409,6 +431,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       ...newCg,
       id: `cg-${Date.now()}`,
       initials,
+      statusAprovacao: "aprovado",
       reviews: [
         {
           id: `rev-init-${Date.now()}`,
@@ -466,7 +489,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     success("Avaliação Publicada!", "Obrigado por ajudar a fortalecer o ecossistema LongeVita.");
   };
 
-  // 8. Marcar Notificações
+  // 8. Aprovação Administrativa de Cuidador
+  const approveCaregiver = (caregiverId: string) => {
+    setCaregivers((prev) =>
+      prev.map((cg) =>
+        cg.id === caregiverId
+          ? { ...cg, antecedentesChecados: true, formacaoVerificada: true, statusAprovacao: "aprovado" }
+          : cg
+      )
+    );
+    success("Cuidador Homologado!", "Antecedentes validados e status aprovado na plataforma.");
+  };
+
+  // 9. Gatilho de Alerta para Demonstração Executiva
+  const triggerDemoAlert = (title: string, message: string) => {
+    const newNotif: AppNotification = {
+      id: `notif-${Date.now()}`,
+      targetRole: "admin",
+      title,
+      message,
+      time: "Agora mesmo",
+      read: false,
+      type: "alerta_admin"
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+    info(title, message);
+  };
+
+  // 10. Marcar Notificações
   const markNotificationAsRead = (id: string) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
@@ -493,6 +543,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         endShift,
         addCaregiver,
         addReview,
+        approveCaregiver,
+        triggerDemoAlert,
         markNotificationAsRead,
         markAllNotificationsAsRead
       }}
