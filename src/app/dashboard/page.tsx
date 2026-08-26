@@ -57,6 +57,10 @@ import MedicalFileModal from "@/components/MedicalFileModal";
 import TerminateContractModal from "@/components/TerminateContractModal";
 import ApplyOpportunityModal from "@/components/ApplyOpportunityModal";
 import AccountSwitcherModal from "@/components/AccountSwitcherModal";
+import CaregiverProfileModal from "@/components/CaregiverProfileModal";
+import QuickChatModal from "@/components/QuickChatModal";
+import EmergencySOSModal from "@/components/EmergencySOSModal";
+import CaregiverCompareModal from "@/components/CaregiverCompareModal";
 import { useApp, Caregiver, Contract, Assistido } from "@/context/AppContext";
 
 export default function DashboardPage() {
@@ -76,10 +80,10 @@ export default function DashboardPage() {
   } = useApp();
 
   // Abas de navegação
-  const [activeTab, setActiveTab] = useState<"vinculos" | "explorar" | "propostas" | "ficha" | "diario">("vinculos");
+  const [activeTab, setActiveTab] = useState<"buscar" | "vinculos" | "explorar" | "propostas" | "ficha" | "diario">("buscar");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Modais
+  // Modais existentes
   const [accountSwitcherOpen, setAccountSwitcherOpen] = useState(false);
   const [hireModalOpen, setHireModalOpen] = useState(false);
   const [targetHireCaregiver, setTargetHireCaregiver] = useState<Caregiver | null>(null);
@@ -99,13 +103,27 @@ export default function DashboardPage() {
 
   const [addCaregiverModalOpen, setAddCaregiverModalOpen] = useState(false);
 
+  // Novos Modais e Funcionalidades Requisitadas
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [targetProfileCaregiver, setTargetProfileCaregiver] = useState<Caregiver | null>(null);
+
+  const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [targetChatCaregiver, setTargetChatCaregiver] = useState<Caregiver | null>(null);
+
+  const [emergencySOSOpen, setEmergencySOSOpen] = useState(false);
+
+  const [compareModalOpen, setCompareModalOpen] = useState(false);
+  const [comparedCaregivers, setComparedCaregivers] = useState<Caregiver[]>([]);
+
   // Card com animação de saída temporária
   const [exitingCardId, setExitingCardId] = useState<string | null>(null);
 
-  // Filtros de Cuidadores
+  // Filtros Avançados de Cuidadores
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("all");
-  const [maxPrice, setMaxPrice] = useState<number>(120);
+  const [selectedTagFilter, setSelectedTagFilter] = useState("all");
+  const [maxPrice, setMaxPrice] = useState<number>(150);
+  const [sortBy, setSortBy] = useState<"recommended" | "price_asc" | "price_desc" | "rating_desc">("recommended");
 
   // Filtros de Oportunidades de Famílias
   const [opportunitySearch, setOpportunitySearch] = useState("");
@@ -118,35 +136,83 @@ export default function DashboardPage() {
     }
   }, [currentUser]);
 
-  // Bloqueia e redireciona abas exclusivas de cuidador caso seja família
+  // Se for cuidador e estiver em "buscar", move para "explorar" (ou mantém vinculos)
   useEffect(() => {
-    if (userRole === "family" && (activeTab === "explorar" || activeTab === "diario")) {
-      setActiveTab("vinculos");
+    if (userRole === "caregiver" && activeTab === "buscar") {
+      setActiveTab("explorar");
     }
-  }, [userRole, activeTab]);
+    if (userRole === "family" && (activeTab === "explorar" || activeTab === "diario")) {
+      setActiveTab("buscar");
+    }
+  }, [userRole]);
 
-  // Cuidadores Disponíveis (filtrados e reativos)
+  // Cuidadores Disponíveis (filtrados, ordenados e reativos)
   const availableCaregivers = useMemo(() => {
-    return caregivers.filter((c) => {
-      // Regra de disponibilidade: se caregiver estiver ativo e disponível
-      const isAvailable = c.disponivel !== false;
-      const cleanTerm = searchTerm.trim().toLowerCase();
-      const matchText =
-        !cleanTerm ||
-        c.nome.toLowerCase().includes(cleanTerm) ||
-        c.especialidade.toLowerCase().includes(cleanTerm) ||
-        (c.habilidades || []).some((h) => h.toLowerCase().includes(cleanTerm));
+    return caregivers
+      .filter((c) => {
+        // Regra de disponibilidade: se caregiver estiver ativo e disponível
+        const isAvailable = c.disponivel !== false;
+        const cleanTerm = searchTerm.trim().toLowerCase();
+        
+        // Busca abrangente: nome, especialidade, biografia, bairro, cidade, formação e habilidades
+        const matchText =
+          !cleanTerm ||
+          c.nome.toLowerCase().includes(cleanTerm) ||
+          c.especialidade.toLowerCase().includes(cleanTerm) ||
+          (c.biografia && c.biografia.toLowerCase().includes(cleanTerm)) ||
+          (c.bairro && c.bairro.toLowerCase().includes(cleanTerm)) ||
+          (c.cidade && c.cidade.toLowerCase().includes(cleanTerm)) ||
+          (c.formacaoAcademica && c.formacaoAcademica.toLowerCase().includes(cleanTerm)) ||
+          (c.habilidades || []).some((h) => h.toLowerCase().includes(cleanTerm));
 
-      const matchSpecialty =
-        selectedSpecialty === "all" ||
-        c.especialidade.toLowerCase().includes(selectedSpecialty.toLowerCase()) ||
-        (c.habilidades || []).some((h) => h.toLowerCase().includes(selectedSpecialty.toLowerCase()));
+        // Filtro por dropdown de especialidade
+        const matchSpecialty =
+          selectedSpecialty === "all" ||
+          c.especialidade.toLowerCase().includes(selectedSpecialty.toLowerCase()) ||
+          (c.habilidades || []).some((h) => h.toLowerCase().includes(selectedSpecialty.toLowerCase()));
 
-      const matchPrice = Number(c.valorHora || 0) <= maxPrice;
+        // Filtro por pílula rápida de tag
+        const matchTag =
+          selectedTagFilter === "all" ||
+          c.especialidade.toLowerCase().includes(selectedTagFilter.toLowerCase()) ||
+          (c.habilidades || []).some((h) => h.toLowerCase().includes(selectedTagFilter.toLowerCase()));
 
-      return isAvailable && matchText && matchSpecialty && matchPrice;
+        const matchPrice = Number(c.valorHora || 0) <= maxPrice;
+
+        return isAvailable && matchText && matchSpecialty && matchTag && matchPrice;
+      })
+      .sort((a, b) => {
+        if (sortBy === "price_asc") return a.valorHora - b.valorHora;
+        if (sortBy === "price_desc") return b.valorHora - a.valorHora;
+        if (sortBy === "rating_desc") return b.avaliacao - a.avaliacao;
+        // Padrão recomendado: nota alta ponderada por avaliações
+        return b.avaliacao * (b.avaliacoesQtd || 1) - a.avaliacao * (a.avaliacoesQtd || 1);
+      });
+  }, [caregivers, searchTerm, selectedSpecialty, selectedTagFilter, maxPrice, sortBy]);
+
+  // Manipuladores de Novos Modais
+  const openProfile = (cg: Caregiver) => {
+    setTargetProfileCaregiver(cg);
+    setProfileModalOpen(true);
+  };
+
+  const openChat = (cg: Caregiver) => {
+    setTargetChatCaregiver(cg);
+    setChatModalOpen(true);
+  };
+
+  const toggleCompare = (cg: Caregiver) => {
+    setComparedCaregivers((prev) => {
+      const exists = prev.some((item) => item.id === cg.id);
+      if (exists) {
+        return prev.filter((item) => item.id !== cg.id);
+      }
+      if (prev.length >= 3) {
+        return [prev[1], prev[2], cg];
+      }
+      return [...prev, cg];
     });
-  }, [caregivers, searchTerm, selectedSpecialty, maxPrice]);
+  };
 
   // Famílias / Oportunidades Disponíveis para Cuidador (status === "disponivel")
   const availableOpportunities = useMemo(() => {
@@ -320,7 +386,55 @@ export default function DashboardPage() {
                 Navegação do Portal
               </span>
 
-              {/* ABA 1: MEUS VÍNCULOS ATIVOS (FAMÍLIA) / MINHAS FAMÍLIAS (CUIDADOR) */}
+              {/* SE FOR FAMÍLIA: ABA DE BUSCAR CUIDADORES NO TOPO */}
+              {userRole === "family" && (
+                <button
+                  onClick={() => {
+                    setActiveTab("buscar");
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
+                    activeTab === "buscar"
+                      ? "bg-[#028490] text-white shadow-sm"
+                      : "text-neutral-600 hover:bg-neutral-100"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Search className="w-4 h-4" />
+                    <span>Buscar Cuidadores</span>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    activeTab === "buscar" ? "bg-white/20 text-white" : "bg-neutral-100 text-neutral-700"
+                  }`}>
+                    {availableCaregivers.length}
+                  </span>
+                </button>
+              )}
+
+              {/* SE FOR CUIDADOR: ABA DE OPORTUNIDADES / FAMÍLIAS */}
+              {userRole === "caregiver" && (
+                <button
+                  onClick={() => {
+                    setActiveTab("explorar");
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
+                    activeTab === "explorar"
+                      ? "bg-[#02a9b5]/10 text-[#028490] border border-[#02a9b5]/30 shadow-sm"
+                      : "text-neutral-600 hover:bg-neutral-100"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className="w-4 h-4 text-[#02a9b5]" />
+                    <span>Oportunidades / Famílias</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700">
+                    {availableOpportunities.length}
+                  </span>
+                </button>
+              )}
+
+              {/* VÍNCULOS ATIVOS */}
               <button
                 onClick={() => {
                   setActiveTab("vinculos");
@@ -343,8 +457,8 @@ export default function DashboardPage() {
                 </span>
               </button>
 
-              {/* SE FOR FAMÍLIA: MOSTRA APENAS FICHA MÉDICA & ASSISTIDOS (SEM ACESSO À ABA DE CUIDADORES) */}
-              {userRole === "family" ? (
+              {/* SE FOR FAMÍLIA: FICHA MÉDICA & ASSISTIDOS */}
+              {userRole === "family" && (
                 <button
                   onClick={() => {
                     setActiveTab("ficha");
@@ -364,53 +478,9 @@ export default function DashboardPage() {
                     {familyAssistidos.length}
                   </span>
                 </button>
-              ) : (
-                /* SE FOR CUIDADOR: MOSTRA A ABA DE OPORTUNIDADES / FAMÍLIAS */
-                <button
-                  onClick={() => {
-                    setActiveTab("explorar");
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
-                    activeTab === "explorar"
-                      ? "bg-[#02a9b5]/10 text-[#028490] border border-[#02a9b5]/30 shadow-sm"
-                      : "text-neutral-600 hover:bg-neutral-100"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Users className="w-4 h-4 text-[#02a9b5]" />
-                    <span>Oportunidades / Famílias</span>
-                  </div>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-700">
-                    {availableOpportunities.length}
-                  </span>
-                </button>
               )}
 
-              {/* ABA DE NOTIFICAÇÕES & PROPOSTAS */}
-              <button
-                onClick={() => {
-                  setActiveTab("propostas");
-                  setMobileMenuOpen(false);
-                }}
-                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
-                  activeTab === "propostas"
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "text-neutral-600 hover:bg-neutral-100"
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Bell className="w-4 h-4 text-[#02a9b5]" />
-                  <span>Notificações & Propostas</span>
-                </div>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white">
-                  {userRole === "family"
-                    ? familyContracts.filter((c) => c.status === "pendente").length
-                    : contracts.filter((c) => c.status === "pendente").length}
-                </span>
-              </button>
-
-              {/* ABA EXCLUSIVA DO CUIDADOR: DIÁRIO DE BORDO */}
+              {/* SE FOR CUIDADOR: DIÁRIO DE BORDO */}
               {userRole === "caregiver" && (
                 <button
                   onClick={() => {
@@ -432,6 +502,29 @@ export default function DashboardPage() {
                   </span>
                 </button>
               )}
+
+              {/* ABA DE NOTIFICAÇÕES & PROPOSTAS (AMBOS) */}
+              <button
+                onClick={() => {
+                  setActiveTab("propostas");
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
+                  activeTab === "propostas"
+                    ? "bg-slate-900 text-white shadow-sm"
+                    : "text-neutral-600 hover:bg-neutral-100"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Bell className="w-4 h-4 text-[#02a9b5]" />
+                  <span>Notificações & Propostas</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white">
+                  {userRole === "family"
+                    ? familyContracts.filter((c) => c.status === "pendente").length
+                    : contracts.filter((c) => c.status === "pendente").length}
+                </span>
+              </button>
             </div>
 
             {/* Ações Rápidas do Sidebar */}
@@ -520,15 +613,36 @@ export default function DashboardPage() {
             </span>
             <span>/</span>
             <span className="text-[#028490] capitalize">
+              {activeTab === "buscar" && "Buscar & Contratar Cuidadores"}
               {activeTab === "vinculos" && (userRole === "family" ? "Vínculos Ativos" : "Famílias Vinculadas")}
-              {activeTab === "explorar" && (userRole === "family" ? "Cuidadores Disponíveis" : "Oportunidades de Famílias")}
+              {activeTab === "explorar" && "Oportunidades de Famílias"}
               {activeTab === "propostas" && "Propostas & Solicitações"}
               {activeTab === "ficha" && "Prontuário & Ficha Clínica"}
               {activeTab === "diario" && "Diário de Bordo"}
             </span>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Botão de Emergência SOS */}
+            <button
+              onClick={() => setEmergencySOSOpen(true)}
+              className="text-xs font-black text-white bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-md shadow-red-500/20 active:scale-95 animate-pulse"
+              title="Central de Emergência SOS (SAMU 192 / Bombeiros 193)"
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              <span>SOS</span>
+            </button>
+
+            {/* Botão de Comparador Flutuante / Header */}
+            {comparedCaregivers.length > 0 && (
+              <button
+                onClick={() => setCompareModalOpen(true)}
+                className="text-xs font-bold text-neutral-900 bg-amber-300 hover:bg-amber-400 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-xs animate-bounce"
+              >
+                <span>⚖️ Comparar ({comparedCaregivers.length})</span>
+              </button>
+            )}
+
             {/* Botão de Troca Rápida no Topo */}
             <button
               onClick={() => setAccountSwitcherOpen(true)}
@@ -554,6 +668,330 @@ export default function DashboardPage() {
 
         {/* Conteúdo Dinâmico por Aba */}
         <main className="flex-1 p-6 sm:p-8 max-w-6xl w-full">
+          {/* ========================================================================= */}
+          {/* ABA: BUSCAR & CONTRATAR CUIDADORES (PORTAL COMPLETO PARA A FAMÍLIA)       */}
+          {/* ========================================================================= */}
+          {activeTab === "buscar" && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-6"
+            >
+              {/* Header da Busca */}
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-neutral-200/80 pb-5">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-[#02a9b5]/10 text-[#028490] text-xs font-bold mb-2 border border-[#02a9b5]/25">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Cuidadores Homologados & Antecedentes Checados
+                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-neutral-900">
+                    Encontrar Cuidadores de Confiança ({availableCaregivers.length})
+                  </h1>
+                  <p className="text-neutral-600 text-xs sm:text-sm font-medium mt-1">
+                    Filtre por patologia, especialidade, região ou plantão desejado e contrate com suporte clínico contínuo.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setAddCaregiverModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 bg-neutral-900 hover:bg-neutral-800 text-white px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-98"
+                  >
+                    <Plus className="w-4 h-4 text-[#38d7e5]" />
+                    Cadastrar Cuidador
+                  </button>
+                  {comparedCaregivers.length > 0 && (
+                    <button
+                      onClick={() => setCompareModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 bg-amber-400 hover:bg-amber-500 text-neutral-900 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm"
+                    >
+                      ⚖️ Comparar ({comparedCaregivers.length})
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Barra de Filtros Inteligentes */}
+              <div className="bg-white p-4 sm:p-5 rounded-3xl border border-neutral-200 shadow-sm space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                  {/* Busca textual */}
+                  <div className="md:col-span-6 relative">
+                    <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Buscar por nome, patologia (ex.: Alzheimer, AVC), bairro..."
+                      className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 text-xs font-medium text-neutral-900 focus:outline-none focus:border-[#028490] focus:bg-white transition-all"
+                    />
+                    {searchTerm && (
+                      <button
+                        onClick={() => setSearchTerm("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Especialidade Dropdown */}
+                  <div className="md:col-span-3">
+                    <select
+                      value={selectedSpecialty}
+                      onChange={(e) => setSelectedSpecialty(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 text-xs font-medium text-neutral-900 focus:outline-none focus:border-[#028490] focus:bg-white"
+                    >
+                      <option value="all">Todas as Especialidades</option>
+                      <option value="Alzheimer">Alzheimer & Demências</option>
+                      <option value="Parkinson">Parkinson</option>
+                      <option value="AVC">AVC & Reabilitação</option>
+                      <option value="Cirúrgico">Pós-Cirúrgico</option>
+                      <option value="Fisioterapia">Fisioterapia Geriátrica</option>
+                      <option value="Paliativos">Cuidados Paliativos</option>
+                      <option value="Noturno">Apoio Noturno</option>
+                      <option value="Nutrição">Nutrição & Dietas</option>
+                    </select>
+                  </div>
+
+                  {/* Ordenação */}
+                  <div className="md:col-span-3">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                      className="w-full px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-200 text-xs font-medium text-neutral-900 focus:outline-none focus:border-[#028490] focus:bg-white"
+                    >
+                      <option value="recommended">Mais Recomendados (★)</option>
+                      <option value="price_asc">Menor Preço / Hora</option>
+                      <option value="price_desc">Maior Preço / Hora</option>
+                      <option value="rating_desc">Melhor Avaliação</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Filtro de Preço e Pílulas Rápidas */}
+                <div className="pt-2 border-t border-neutral-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  {/* Pílulas de Filtro Rápido */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
+                    <span className="text-[11px] font-bold text-neutral-400 uppercase mr-1 whitespace-nowrap flex items-center gap-1">
+                      <Filter className="w-3 h-3" />
+                      Filtros:
+                    </span>
+                    {[
+                      { id: "all", label: "Todos" },
+                      { id: "Alzheimer", label: "🧠 Alzheimer" },
+                      { id: "Parkinson", label: "🩺 Parkinson" },
+                      { id: "AVC", label: "♿ AVC & Mobilidade" },
+                      { id: "Cirúrgico", label: "🩹 Pós-Cirúrgico" },
+                      { id: "Fisioterapia", label: "🏃‍♂️ Fisioterapia" },
+                      { id: "Noturno", label: "🌙 Noturno" },
+                      { id: "Paliativos", label: "🕊️ Paliativos" },
+                      { id: "Nutrição", label: "🥗 Nutrição" },
+                    ].map((tag) => (
+                      <button
+                        key={tag.id}
+                        onClick={() => setSelectedTagFilter(tag.id)}
+                        className={`text-xs px-3 py-1 rounded-xl font-bold whitespace-nowrap transition-all ${
+                          selectedTagFilter === tag.id
+                            ? "bg-[#028490] text-white shadow-xs"
+                            : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                        }`}
+                      >
+                        {tag.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Slider de Preço */}
+                  <div className="flex items-center gap-3 min-w-[220px]">
+                    <span className="text-xs font-semibold text-neutral-500 whitespace-nowrap">
+                      Até <strong className="text-neutral-900">R$ {maxPrice}/h</strong>
+                    </span>
+                    <input
+                      type="range"
+                      min={30}
+                      max={150}
+                      step={5}
+                      value={maxPrice}
+                      onChange={(e) => setMaxPrice(Number(e.target.value))}
+                      className="w-full accent-[#028490] cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Vitrine de Cuidadores */}
+              {availableCaregivers.length === 0 ? (
+                <div className="p-12 rounded-3xl bg-white border border-dashed border-neutral-300 text-center space-y-3">
+                  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto" />
+                  <h3 className="text-sm font-bold text-neutral-800">
+                    Nenhum cuidador encontrado com esses critérios
+                  </h3>
+                  <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+                    Tente aumentar o limite de preço no slider ou limpar o termo de pesquisa.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSearchTerm("");
+                      setSelectedSpecialty("all");
+                      setSelectedTagFilter("all");
+                      setMaxPrice(150);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-[#028490] text-white text-xs font-bold shadow-sm"
+                  >
+                    Resetar Filtros
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {availableCaregivers.map((cg, index) => {
+                    const isCompared = comparedCaregivers.some((c) => c.id === cg.id);
+                    return (
+                      <div
+                        key={cg.id}
+                        style={{ animationDelay: `${index * 60}ms` }}
+                        className="stagger-card interactive-card rounded-3xl bg-white p-5 shadow-sm hover:shadow-xl border border-neutral-200/90 flex flex-col justify-between transition-all group relative overflow-hidden"
+                      >
+                        {/* Topo do Card: Foto, Preço e Selos */}
+                        <div>
+                          <div className="flex items-start justify-between gap-3 mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-14 h-14 rounded-2xl overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200 shadow-sm relative">
+                                <img
+                                  src={cg.foto}
+                                  alt={cg.nome}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                                <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+                              </div>
+                              <div>
+                                <h3 className="text-sm font-black text-neutral-900 leading-snug">
+                                  {cg.nome}
+                                </h3>
+                                <div className="flex items-center gap-1 text-xs font-bold text-amber-500 mt-0.5">
+                                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                  <span>{cg.avaliacao.toFixed(2)}</span>
+                                  <span className="text-[10px] text-neutral-400 font-medium">
+                                    ({cg.avaliacoesQtd})
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="text-right flex-shrink-0">
+                              <span className="text-lg font-black text-neutral-900 block">
+                                R$ {cg.valorHora}
+                              </span>
+                              <span className="text-[10px] text-neutral-400 font-semibold uppercase">
+                                / hora
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Especialidade e Localização */}
+                          <div className="space-y-1.5 my-2.5">
+                            <p className="text-xs font-bold text-neutral-700 line-clamp-1">
+                              {cg.especialidade}
+                            </p>
+                            <div className="flex items-center gap-2 text-[11px] text-neutral-500 font-medium">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3 text-[#02a9b5]" />
+                                {cg.bairro || "São Paulo - SP"}
+                              </span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-neutral-400" />
+                                {cg.experiencia}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Selos de Verificação */}
+                          <div className="flex flex-wrap items-center gap-1.5 my-2">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200">
+                              <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                              Antecedentes OK
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 text-[10px] font-bold border border-blue-200">
+                              <Award className="w-3 h-3 text-blue-600" />
+                              Formação Checada
+                            </span>
+                          </div>
+
+                          {/* Habilidades Principais */}
+                          <div className="flex flex-wrap gap-1 my-2">
+                            {(cg.habilidades || []).slice(0, 3).map((hab, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 text-[10px] font-medium"
+                              >
+                                {hab}
+                              </span>
+                            ))}
+                          </div>
+
+                          {/* Depoimento Recente de Familiar */}
+                          {cg.reviews && cg.reviews.length > 0 && (
+                            <div className="mt-2.5 p-2.5 rounded-xl bg-slate-50 border-l-2 border-[#02a9b5] text-xs">
+                              <p className="italic text-neutral-600 text-[11px] line-clamp-2 leading-relaxed">
+                                "{cg.reviews[0].comment}"
+                              </p>
+                              <span className="text-[10px] font-bold text-neutral-500 mt-1 block">
+                                — {cg.reviews[0].authorName} ({cg.reviews[0].authorRelation || "Familiar"})
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Botões de Ação do Card */}
+                        <div className="pt-3 mt-3 border-t border-neutral-100 space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => openProfile(cg)}
+                              className="py-2 px-3 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold transition-all text-center flex items-center justify-center gap-1"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-[#028490]" />
+                              Ver Perfil
+                            </button>
+
+                            <button
+                              onClick={() => openChat(cg)}
+                              className="py-2 px-3 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-bold transition-all text-center flex items-center justify-center gap-1"
+                            >
+                              <MessageCircle className="w-3.5 h-3.5 text-[#028490]" />
+                              Conversar
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => openHire(cg)}
+                              className="flex-1 py-2.5 px-4 rounded-xl bg-[#028490] hover:bg-[#026c76] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-98"
+                            >
+                              <HeartHandshake className="w-4 h-4" />
+                              Contratar
+                            </button>
+
+                            <button
+                              onClick={() => toggleCompare(cg)}
+                              className={`p-2.5 rounded-xl border text-xs font-bold transition-all ${
+                                isCompared
+                                  ? "bg-amber-400 text-neutral-900 border-amber-500 shadow-xs"
+                                  : "bg-white text-neutral-500 border-neutral-200 hover:bg-neutral-50"
+                              }`}
+                              title={isCompared ? "Remover da comparação" : "Adicionar à comparação"}
+                            >
+                              ⚖️
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </motion.div>
+          )}
+
           {/* ========================================================================= */}
           {/* ABA 1: MEUS VÍNCULOS ATIVOS (ISOLAMENTO SEGURO POR PERFIL)                 */}
           {/* ========================================================================= */}
@@ -581,11 +1019,11 @@ export default function DashboardPage() {
 
                 {userRole === "family" && (
                   <button
-                    onClick={() => setActiveTab("explorar")}
+                    onClick={() => setActiveTab("buscar")}
                     className="self-start sm:self-auto inline-flex items-center gap-2 bg-[#72b63f] hover:bg-[#63a035] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-98"
                   >
                     <Users className="w-4 h-4" />
-                    Contratar Novo Cuidador
+                    Buscar & Contratar Cuidadores
                   </button>
                 )}
               </div>
@@ -1387,8 +1825,88 @@ export default function DashboardPage() {
       </div>
 
       {/* ========================================================================= */}
+      {/* BARRA FLUTUANTE DE COMPARADOR                                             */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {comparedCaregivers.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-neutral-700 flex items-center justify-between gap-4 max-w-xl w-[94%]"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-black uppercase text-amber-400">
+                ⚖️ Comparando ({comparedCaregivers.length}/3):
+              </span>
+              <div className="flex items-center -space-x-2">
+                {comparedCaregivers.map((c) => (
+                  <div
+                    key={c.id}
+                    className="w-8 h-8 rounded-full overflow-hidden border-2 border-slate-900 shadow-sm"
+                    title={c.nome}
+                  >
+                    <img src={c.foto} alt={c.nome} className="w-full h-full object-cover" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCompareModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-[#02a9b5] hover:bg-[#028490] text-white text-xs font-bold transition-all shadow-sm active:scale-95"
+              >
+                Comparar Lado a Lado
+              </button>
+              <button
+                onClick={() => setComparedCaregivers([])}
+                className="p-1.5 rounded-xl text-neutral-400 hover:text-white transition-colors"
+                title="Limpar seleção"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ========================================================================= */}
       {/* MODAIS GLOBAIS DE INTERAÇÃO REATIVA                                       */}
       {/* ========================================================================= */}
+      <CaregiverProfileModal
+        isOpen={profileModalOpen}
+        caregiver={targetProfileCaregiver}
+        onClose={() => {
+          setProfileModalOpen(false);
+          setTargetProfileCaregiver(null);
+        }}
+        onHire={openHire}
+        onOpenChat={openChat}
+      />
+
+      <QuickChatModal
+        isOpen={chatModalOpen}
+        caregiver={targetChatCaregiver}
+        onClose={() => {
+          setChatModalOpen(false);
+          setTargetChatCaregiver(null);
+        }}
+      />
+
+      <EmergencySOSModal
+        isOpen={emergencySOSOpen}
+        onClose={() => setEmergencySOSOpen(false)}
+      />
+
+      <CaregiverCompareModal
+        isOpen={compareModalOpen}
+        caregivers={comparedCaregivers}
+        onClose={() => setCompareModalOpen(false)}
+        onHire={openHire}
+        onRemove={(id) => setComparedCaregivers((prev) => prev.filter((c) => c.id !== id))}
+      />
+
       <HireModal
         caregiver={targetHireCaregiver}
         isOpen={hireModalOpen}

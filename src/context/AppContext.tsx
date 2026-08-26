@@ -34,6 +34,13 @@ export interface Caregiver {
   habilidades: string[];
   reviews: Review[];
   vinculosAtivosCount?: number;
+  bairro?: string;
+  cidade?: string;
+  telefone?: string;
+  email?: string;
+  formacaoAcademica?: string;
+  certificados?: string[];
+  atendimentosConcluidos?: number;
 }
 
 export interface Assistido {
@@ -211,7 +218,7 @@ export const INITIAL_USERS: UserProfile[] = [
     avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop",
     phone: "(11) 98765-4321",
     cpf: "123.456.789-00",
-    subtitle: "Família Albuquerque Castro (Vinculada à Cuidadora Ana Silva)"
+    subtitle: "Família Albuquerque Castro (Dona Helena • 78 anos)"
   },
   {
     id: "fam-2",
@@ -222,7 +229,18 @@ export const INITIAL_USERS: UserProfile[] = [
     avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop",
     phone: "(11) 97654-3210",
     cpf: "987.654.321-11",
-    subtitle: "Família Silveira (Proposta enviada para Seu Roberto)"
+    subtitle: "Família Silveira (Seu Antônio • 82 anos)"
+  },
+  {
+    id: "fam-3",
+    name: "Cláudia Meirelles",
+    email: "claudia.meirelles@exemplo.com",
+    role: "family",
+    familyId: "fam-3",
+    avatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=400&auto=format&fit=crop",
+    phone: "(11) 98555-1122",
+    cpf: "555.444.333-22",
+    subtitle: "Família Meirelles (Dona Lourdes • 85 anos)"
   },
   {
     id: "cg-1",
@@ -233,7 +251,7 @@ export const INITIAL_USERS: UserProfile[] = [
     avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=600&auto=format&fit=crop",
     phone: "(11) 98111-2233",
     cpf: "234.567.890-12",
-    subtitle: "Cuidadora Especialista (Vinculada à Dona Helena)"
+    subtitle: "Enfermeira Padrão • Alzheimer & Demências"
   },
   {
     id: "cg-2",
@@ -244,7 +262,7 @@ export const INITIAL_USERS: UserProfile[] = [
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop",
     phone: "(11) 98222-3344",
     cpf: "345.678.901-23",
-    subtitle: "Cuidador Disponível (Proposta em análise com Seu Roberto)"
+    subtitle: "Técnico de Enfermagem • Fisioterapia & Parkinson"
   },
   {
     id: "cg-3",
@@ -255,7 +273,95 @@ export const INITIAL_USERS: UserProfile[] = [
     avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=600&auto=format&fit=crop",
     phone: "(11) 98333-4455",
     cpf: "456.789.012-34",
-    subtitle: "Cuidadora Geriátrica (Disponível para novos atendimentos)"
+    subtitle: "Especialista em Gerontologia • Pós-Cirúrgico"
+  },
+  {
+    id: "cg-4",
+    name: "Fernando Bittencourt",
+    email: "fernando.b@longevita.com.br",
+    role: "caregiver",
+    caregiverId: "cg-4",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=600&auto=format&fit=crop",
+    phone: "(11) 98444-5566",
+    cpf: "567.890.123-45",
+    subtitle: "Cuidador Sênior • Paliativos & Apoio Noturno"
+  },
+  {
+    id: "cg-5",
+    name: "Juliana Ribeiro",
+    email: "juliana.ribeiro@longevita.com.br",
+    role: "caregiver",
+    caregiverId: "cg-5",
+    avatar: "https://images.unsplash.com/photo-1594824813583-b7c1264c783c?q=80&w=600&auto=format&fit=crop",
+    phone: "(11) 98555-6677",
+    cpf: "678.901.234-56",
+    subtitle: "Técnica de Enfermagem • Recuperação de AVC"
+  },
+  {
+    id: "cg-6",
+    name: "Dr. Marcos Vinicius Faria",
+    email: "marcos.faria@longevita.com.br",
+    role: "caregiver",
+    caregiverId: "cg-6",
+    avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=600&auto=format&fit=crop",
+    phone: "(11) 98666-7788",
+    cpf: "789.012.345-67",
+    subtitle: "Fisioterapeuta Geriátrico • Reabilitação Motora"
+  },
+  {
+    id: "cg-7",
+    name: "Beatriz Carvalho",
+    email: "beatriz.c@longevita.com.br",
+    role: "caregiver",
+    caregiverId: "cg-7",
+    avatar: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?q=80&w=600&auto=format&fit=crop",
+    phone: "(11) 98777-8899",
+    cpf: "890.123.456-78",
+    subtitle: "Companhia Ativa • Estimulação Neurocognitiva"
+  },
+  {
+    id: "cg-8",
+    name: "Rodrigo Albuquerque",
+    email: "rodrigo.a@longevita.com.br",
+    role: "caregiver",
+    caregiverId: "cg-8",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=600&auto=format&fit=crop",
+    phone: "(11) 98888-9900",
+    cpf: "901.234.567-89",
+    subtitle: "Vigilância Noturna & Monitoramento Contínuo"
+  },
+  {
+    id: "cg-9",
+    name: "Dra. Camila Nogueira",
+    email: "camila.nogueira@longevita.com.br",
+    role: "caregiver",
+    caregiverId: "cg-9",
+    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=600&auto=format&fit=crop",
+    phone: "(11) 98999-0011",
+    cpf: "012.345.678-90",
+    subtitle: "Gerontologia Clínica & Cuidados de Alta Complexidade"
+  },
+  {
+    id: "cg-10",
+    name: "Patrícia Lima",
+    email: "patricia.lima@longevita.com.br",
+    role: "caregiver",
+    caregiverId: "cg-10",
+    avatar: "https://images.unsplash.com/photo-1548142813-c348350df52b?q=80&w=600&auto=format&fit=crop",
+    phone: "(11) 99111-2244",
+    cpf: "123.789.456-01",
+    subtitle: "Nutrição Clínica & Dietas Especiais Geriátricas"
+  },
+  {
+    id: "cg-11",
+    name: "Lucas Barreto",
+    email: "lucas.barreto@longevita.com.br",
+    role: "caregiver",
+    caregiverId: "cg-11",
+    avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?q=80&w=600&auto=format&fit=crop",
+    phone: "(11) 99222-3355",
+    cpf: "234.890.567-12",
+    subtitle: "Cuidados Pós-Alta & Acompanhamento Hospitalar"
   },
   {
     id: "admin-1",
@@ -269,7 +375,7 @@ export const INITIAL_USERS: UserProfile[] = [
   }
 ];
 
-const INITIAL_CAREGIVERS: Caregiver[] = [
+export const INITIAL_CAREGIVERS: Caregiver[] = [
   {
     id: "cg-1",
     nome: "Ana Silva",
@@ -284,9 +390,16 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
     antecedentesChecados: true,
     formacaoVerificada: true,
     statusAprovacao: "aprovado",
-    disponibilidade: "Plantão Diurno e Noturno",
-    disponivel: false, // Atualmente vinculada à Dona Helena
-    vinculosAtivosCount: 1,
+    disponibilidade: "Plantão 12h (Diurno e Noturno)",
+    disponivel: true,
+    vinculosAtivosCount: 0,
+    bairro: "Jardins",
+    cidade: "São Paulo - SP",
+    telefone: "(11) 98111-2233",
+    email: "ana.silva@longevita.com.br",
+    formacaoAcademica: "Bacharelado em Enfermagem (USP) • Especialização em Gerontologia",
+    certificados: ["Suporte Básico de Vida (BLS)", "Manejo Clínico de Demências", "Administração Segura de Medicamentos"],
+    atendimentosConcluidos: 148,
     habilidades: ["Alzheimer", "Cuidados com Sonda", "Administração de Medicamentos", "Estímulo Cognitivo"],
     reviews: [
       {
@@ -296,7 +409,7 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
         authorRelation: "Filha da Dona Helena",
         date: "Há 3 dias",
         rating: 5,
-        comment: "A Ana cuida da minha mãe com um carinho e dedicação impecáveis. Muito pontual e atenta a cada detalhe das medicações prescritas.",
+        comment: "A Ana cuidou da minha mãe com um carinho e dedicação impecáveis. Muito pontual e atenta a cada detalhe das medicações prescritas.",
         tags: ["Especialista em Alzheimer", "Pontualidade Rigorosa", "Atendimento Humanizado"]
       },
       {
@@ -328,6 +441,13 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
     disponibilidade: "Segunda a Sexta (Horário Comercial)",
     disponivel: true,
     vinculosAtivosCount: 0,
+    bairro: "Higienópolis",
+    cidade: "São Paulo - SP",
+    telefone: "(11) 98222-3344",
+    email: "carlos.mendes@longevita.com.br",
+    formacaoAcademica: "Técnico em Enfermagem (SENAC) • Curso Avançado de Cuidado ao Idoso",
+    certificados: ["Primeiros Socorros Geriátricos", "Mobilização e Transferência Segura", "Prevenção de Quedas"],
+    atendimentosConcluidos: 92,
     habilidades: ["Parkinson", "Mobilidade & Caminhada", "Primeiros Socorros", "Dieta Especial"],
     reviews: [
       {
@@ -359,7 +479,14 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
     disponibilidade: "Finais de Semana & Plantões 24h",
     disponivel: true,
     vinculosAtivosCount: 0,
-    habilidades: ["Curativos Complexos", "Monitoramento de PA/Glicemia", "Apoio Psicoemocional"],
+    bairro: "Bela Vista",
+    cidade: "São Paulo - SP",
+    telefone: "(11) 98333-4455",
+    email: "mariana.oliveira@longevita.com.br",
+    formacaoAcademica: "Pós-Graduação em Cuidados Intensivos • Enfermagem (UNIFESP)",
+    certificados: ["Curativos de Alta Tecnologia", "Estomaterapia", "Oxigenoterapia Domiciliar"],
+    atendimentosConcluidos: 210,
+    habilidades: ["Curativos Complexos", "Monitoramento de PA/Glicemia", "Apoio Psicoemocional", "Pós-Cirúrgico"],
     reviews: [
       {
         id: "rev-4",
@@ -390,7 +517,14 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
     disponibilidade: "Plantão Noturno (19h às 07h)",
     disponivel: true,
     vinculosAtivosCount: 0,
-    habilidades: ["Manejo da Dor", "Oxigenoterapia", "Posicionamento no Leito", "Suporte Noturno"],
+    bairro: "Vila Madalena",
+    cidade: "São Paulo - SP",
+    telefone: "(11) 98444-5566",
+    email: "fernando.b@longevita.com.br",
+    formacaoAcademica: "Graduação em Enfermagem • Certificação em Cuidados Paliativos",
+    certificados: ["Controle de Sintomas em Geriatria", "Manejo de Dor Crônica", "Vigilância Noturna Avançada"],
+    atendimentosConcluidos: 85,
+    habilidades: ["Manejo da Dor", "Oxigenoterapia", "Posicionamento no Leito", "Suporte Noturno", "Paliativos"],
     reviews: [
       {
         id: "rev-5",
@@ -401,6 +535,272 @@ const INITIAL_CAREGIVERS: Caregiver[] = [
         rating: 4.9,
         comment: "Fernando é muito atento e cuidadoso durante a noite, proporcionando noites de sono tranquilas para toda a família.",
         tags: ["Apoio Noturno", "Atenção Plena", "Manejo da Dor"]
+      }
+    ]
+  },
+  {
+    id: "cg-5",
+    nome: "Juliana Ribeiro",
+    initials: "JR",
+    especialidade: "Técnica de Enfermagem & Recuperação de AVC",
+    experiencia: "9 anos de experiência",
+    avaliacao: 4.96,
+    avaliacoesQtd: 47,
+    valorHora: 42,
+    foto: "https://images.unsplash.com/photo-1594824813583-b7c1264c783c?q=80&w=600&auto=format&fit=crop",
+    biografia: "Atuação intensiva em reabilitação de idosos pós-AVC, técnicas de fonoaudiologia básica para deglutição segura, banho no leito e transferências suaves.",
+    antecedentesChecados: true,
+    formacaoVerificada: true,
+    statusAprovacao: "aprovado",
+    disponibilidade: "Plantão 12h (Diurno)",
+    disponivel: true,
+    vinculosAtivosCount: 0,
+    bairro: "Pinheiros",
+    cidade: "São Paulo - SP",
+    telefone: "(11) 98555-6677",
+    email: "juliana.ribeiro@longevita.com.br",
+    formacaoAcademica: "Técnica em Enfermagem • Especialização em Neurorreabilitação",
+    certificados: ["Manejo da Disfagia", "Transferência e Ergonomia", "Cuidados Pós-AVC"],
+    atendimentosConcluidos: 134,
+    habilidades: ["Sequelas de AVC", "Disfagia & Alimentação", "Banho no Leito", "Transferências Seguras"],
+    reviews: [
+      {
+        id: "rev-6",
+        caregiverId: "cg-5",
+        authorName: "Lucas Mendonça",
+        authorRelation: "Filho de assistido",
+        date: "Há 1 semana",
+        rating: 5,
+        comment: "A Juliana foi fundamental na recuperação da minha mãe após o AVC. Muito paciente e com conhecimento técnico ímpar.",
+        tags: ["Recuperação de AVC", "Paciência Infinita", "Técnica Apurada"]
+      }
+    ]
+  },
+  {
+    id: "cg-6",
+    nome: "Dr. Marcos Vinicius Faria",
+    initials: "MF",
+    especialidade: "Fisioterapia Geriátrica & Reabilitação Funcional",
+    experiencia: "12 anos de experiência",
+    avaliacao: 4.98,
+    avaliacoesQtd: 64,
+    valorHora: 65,
+    foto: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=600&auto=format&fit=crop",
+    biografia: "Fisioterapeuta clínico e domiciliar com foco na manutenção da independência física do idoso, prevenção de quedas, reeducação da marcha e fortalecimento muscular.",
+    antecedentesChecados: true,
+    formacaoVerificada: true,
+    statusAprovacao: "aprovado",
+    disponibilidade: "Atendimento Pontual e Periódico",
+    disponivel: true,
+    vinculosAtivosCount: 0,
+    bairro: "Moema",
+    cidade: "São Paulo - SP",
+    telefone: "(11) 98666-7788",
+    email: "marcos.faria@longevita.com.br",
+    formacaoAcademica: "Mestrado em Fisioterapia Geriátrica (USP) • CREFITO Ativo",
+    certificados: ["Avaliação de Risco de Quedas", "Fisioterapia Respiratória e Motora", "Biomecânica Geriátrica"],
+    atendimentosConcluidos: 320,
+    habilidades: ["Fisioterapia", "Prevenção de Quedas", "Fortalecimento Muscular", "Reabilitação da Marcha"],
+    reviews: [
+      {
+        id: "rev-7",
+        caregiverId: "cg-6",
+        authorName: "Patrícia Drummond",
+        authorRelation: "Filha de paciente",
+        date: "Há 4 dias",
+        rating: 5,
+        comment: "O Dr. Marcos devolveu a mobilidade e a confiança do meu pai para caminhar pela casa sem medo de cair. Trabalho espetacular.",
+        tags: ["Reabilitação Completa", "Segurança Total", "Excelência Clínica"]
+      }
+    ]
+  },
+  {
+    id: "cg-7",
+    nome: "Beatriz Carvalho",
+    initials: "BC",
+    especialidade: "Companhia Afetiva & Estimulação Neurocognitiva",
+    experiencia: "5 anos de experiência",
+    avaliacao: 4.91,
+    avaliacoesQtd: 31,
+    valorHora: 35,
+    foto: "https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?q=80&w=600&auto=format&fit=crop",
+    biografia: "Formada em Psicologia com extensão em Gerontologia. Especialista em jogos de estimulação cognitiva, musicoterapia, passeios ao ar livre e combate à solidão em idosos.",
+    antecedentesChecados: true,
+    formacaoVerificada: true,
+    statusAprovacao: "aprovado",
+    disponibilidade: "Segunda a Sexta (Meio Período / Integral)",
+    disponivel: true,
+    vinculosAtivosCount: 0,
+    bairro: "Perdizes",
+    cidade: "São Paulo - SP",
+    telefone: "(11) 98777-8899",
+    email: "beatriz.c@longevita.com.br",
+    formacaoAcademica: "Bacharelado em Psicologia (PUC-SP) • Neuropsicologia do Envelhecimento",
+    certificados: ["Estimulação Cognitiva em Idosos", "Comunicação Não Violenta", "Musicoterapia no Cuidado"],
+    atendimentosConcluidos: 78,
+    habilidades: ["Estimulação Cognitiva", "Musicoterapia", "Passeios Supervisionados", "Apoio Emocional"],
+    reviews: [
+      {
+        id: "rev-8",
+        caregiverId: "cg-7",
+        authorName: "Heloísa Vasconcelos",
+        authorRelation: "Neta de assistida",
+        date: "Há 2 semanas",
+        rating: 5,
+        comment: "A Beatriz trouxe uma alegria contagiante para os dias da minha avó. O humor dela melhorou significativamente com as atividades.",
+        tags: ["Acolhimento Ímpar", "Criatividade", "Muito Carinhosa"]
+      }
+    ]
+  },
+  {
+    id: "cg-8",
+    nome: "Rodrigo Albuquerque",
+    initials: "RA",
+    especialidade: "Vigilância Noturna & Monitoramento Contínuo",
+    experiencia: "6 anos de experiência",
+    avaliacao: 4.89,
+    avaliacoesQtd: 23,
+    valorHora: 46,
+    foto: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=600&auto=format&fit=crop",
+    biografia: "Profissional treinado para plantões noturnos em pacientes com insônia crônica, agitação noturna (Sundowning) e necessidade de checagem regular de sinais.",
+    antecedentesChecados: true,
+    formacaoVerificada: true,
+    statusAprovacao: "aprovado",
+    disponibilidade: "Plantão Noturno 12h (19h às 07h)",
+    disponivel: true,
+    vinculosAtivosCount: 0,
+    bairro: "Itaim Bibi",
+    cidade: "São Paulo - SP",
+    telefone: "(11) 98888-9900",
+    email: "rodrigo.a@longevita.com.br",
+    formacaoAcademica: "Curso Profissionalizante de Cuidador de Idosos (Cruz Vermelha)",
+    certificados: ["Manejo da Síndrome do Pôr do Sol", "Suporte Noturno Avançado", "Prevenção de Lesões"],
+    atendimentosConcluidos: 67,
+    habilidades: ["Plantão Noturno", "Síndrome do Pôr do Sol", "Monitoramento de Sinais", "Higiene do Sono"],
+    reviews: [
+      {
+        id: "rev-9",
+        caregiverId: "cg-8",
+        authorName: "Marcelo Fonseca",
+        authorRelation: "Filho de assistido",
+        date: "Há 6 dias",
+        rating: 4.9,
+        comment: "O Rodrigo é muito pontual e responsável. Conseguiu estabilizar o sono do meu pai sem qualquer sobressalto.",
+        tags: ["Segurança Noturna", "Pontualidade Britânica", "Atenção Total"]
+      }
+    ]
+  },
+  {
+    id: "cg-9",
+    nome: "Dra. Camila Nogueira",
+    initials: "CN",
+    especialidade: "Gerontologia Clínica & Cuidados de Alta Complexidade",
+    experiencia: "14 anos de experiência",
+    avaliacao: 5.0,
+    avaliacoesQtd: 72,
+    valorHora: 70,
+    foto: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=600&auto=format&fit=crop",
+    biografia: "Enfermeira sênior e consultora geriátrica. Gestão integral do plano de cuidados para pacientes com demências avançadas, traqueostomia, gastrostomia (GTT) e suporte ventilatório.",
+    antecedentesChecados: true,
+    formacaoVerificada: true,
+    statusAprovacao: "aprovado",
+    disponibilidade: "Plantões 12h / Consultoria Domiciliar",
+    disponivel: true,
+    vinculosAtivosCount: 0,
+    bairro: "Jardim Paulista",
+    cidade: "São Paulo - SP",
+    telefone: "(11) 98999-0011",
+    email: "camila.nogueira@longevita.com.br",
+    formacaoAcademica: "Doutorado em Saúde do Idoso (UNIFESP) • Especialista em Terapia Intensiva",
+    certificados: ["Manejo de Vias Aéreas e GTT", "Cuidados Intensivos Domiciliares", "Protocolos Avançados de Demência"],
+    atendimentosConcluidos: 410,
+    habilidades: ["Alta Complexidade", "Traqueostomia & GTT", "Demência Avançada", "Protocolos Clínicos"],
+    reviews: [
+      {
+        id: "rev-10",
+        caregiverId: "cg-9",
+        authorName: "Eduardo Queiroz",
+        authorRelation: "Filho de assistida",
+        date: "Há 3 dias",
+        rating: 5,
+        comment: "A Dra. Camila é de uma competência inigualável. Transformou a rotina de cuidados da minha mãe acamada com profissionalismo hospitalar em casa.",
+        tags: ["Competência Máxima", "Padrão Hospitalar", "Humanização"]
+      }
+    ]
+  },
+  {
+    id: "cg-10",
+    nome: "Patrícia Lima",
+    initials: "PL",
+    especialidade: "Nutrição Clínica & Dietas Especiais Geriátricas",
+    experiencia: "8 anos de experiência",
+    avaliacao: 4.93,
+    avaliacoesQtd: 38,
+    valorHora: 40,
+    foto: "https://images.unsplash.com/photo-1548142813-c348350df52b?q=80&w=600&auto=format&fit=crop",
+    biografia: "Nutricionista e cuidadora com foco no controle glicêmico, hipertensão, dietas hipercalóricas para desnutrição e adaptação de consistência alimentar para idosos disfágicos.",
+    antecedentesChecados: true,
+    formacaoVerificada: true,
+    statusAprovacao: "aprovado",
+    disponibilidade: "Diária Fixa (Segunda a Sexta)",
+    disponivel: true,
+    vinculosAtivosCount: 0,
+    bairro: "Santana",
+    cidade: "São Paulo - SP",
+    telefone: "(11) 99111-2244",
+    email: "patricia.lima@longevita.com.br",
+    formacaoAcademica: "Graduação em Nutrição (São Camilo) • Capacitação em Geriatria",
+    certificados: ["Terapia Nutricional Enteral e Oral", "Controle de Diabetes Mellitus Tipo 2", "Higienização e Segurança Alimentar"],
+    atendimentosConcluidos: 115,
+    habilidades: ["Nutrição Geriátrica", "Controle de Diabetes", "Cardápio Personalizado", "Hidratação Supervisionada"],
+    reviews: [
+      {
+        id: "rev-11",
+        caregiverId: "cg-10",
+        authorName: "Simone Barreto",
+        authorRelation: "Filha de paciente",
+        date: "Há 1 semana",
+        rating: 5,
+        comment: "Meu pai recuperou 4kg de massa magra e os níveis de glicemia finalmente estabilizaram com os cuidados nutricionais da Patrícia.",
+        tags: ["Nutrição Especializada", "Resultados Visíveis", "Muito Atenciosa"]
+      }
+    ]
+  },
+  {
+    id: "cg-11",
+    nome: "Lucas Barreto",
+    initials: "LB",
+    especialidade: "Cuidados Pós-Alta & Acompanhamento Hospitalar",
+    experiencia: "7 anos de experiência",
+    avaliacao: 4.87,
+    avaliacoesQtd: 26,
+    valorHora: 44,
+    foto: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?q=80&w=600&auto=format&fit=crop",
+    biografia: "Especialista no período crítico de transição hospital-casa, suporte na adaptação do quarto, auxílio em exames externos e controle rigoroso de prescrições médicas.",
+    antecedentesChecados: true,
+    formacaoVerificada: true,
+    statusAprovacao: "aprovado",
+    disponibilidade: "Escala Flexível / Plantão 12h",
+    disponivel: true,
+    vinculosAtivosCount: 0,
+    bairro: "Vila Mariana",
+    cidade: "São Paulo - SP",
+    telefone: "(11) 99222-3355",
+    email: "lucas.barreto@longevita.com.br",
+    formacaoAcademica: "Técnico em Enfermagem Hospitalar • Socorrista Credenciado",
+    certificados: ["Atendimento Pré-Hospitalar (APH)", "Acompanhamento em Transporte Médico", "Rotinas de Convalescença"],
+    atendimentosConcluidos: 89,
+    habilidades: ["Pós-Alta Hospitalar", "Acompanhamento em Consultas", "Primeiros Socorros", "Rotinas de Medicação"],
+    reviews: [
+      {
+        id: "rev-12",
+        caregiverId: "cg-11",
+        authorName: "Renato Siqueira",
+        authorRelation: "Filho de assistido",
+        date: "Há 5 dias",
+        rating: 4.9,
+        comment: "O Lucas nos acompanhou no hospital e garantiu que a volta para casa fosse totalmente segura e tranquila. Recomendo muito!",
+        tags: ["Segurança na Transição", "Prestativo", "Excelente Comunicação"]
       }
     ]
   }
@@ -676,10 +1076,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (saved) {
           const stored = JSON.parse(saved);
           if (Array.isArray(stored) && stored.length > 0) {
-            const cgMap = new Map();
+            const cgMap = new Map<string, Caregiver>();
             INITIAL_CAREGIVERS.forEach((c) => cgMap.set(c.id, c));
             stored.forEach((c: Caregiver) => {
-              if (c && c.id) cgMap.set(c.id, c);
+              if (c && c.id) {
+                const existingInitial = cgMap.get(c.id);
+                if (existingInitial) {
+                  cgMap.set(c.id, { ...existingInitial, ...c, disponivel: c.disponivel !== false });
+                } else {
+                  cgMap.set(c.id, c);
+                }
+              }
             });
             return Array.from(cgMap.values());
           }
