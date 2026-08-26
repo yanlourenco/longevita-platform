@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   User,
   Mail,
@@ -15,21 +15,9 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  ArrowRight,
   ShieldCheck,
-  Building,
-  Home,
-  Clock,
-  HeartHandshake,
-  Calendar,
-  Sparkles,
   ChevronRight,
-  ChevronLeft,
-  Briefcase,
-  Heart,
-  LayoutDashboard,
-  Users,
-  FileText
+  ChevronLeft
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useToast } from "@/components/ToastProvider";
@@ -38,7 +26,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function HomePage() {
   const router = useRouter();
-  const { success, error: toastError, info } = useToast();
+  const { success, error: toastError } = useToast();
   const supabase = createClient();
 
   const [step, setStep] = useState(1);
@@ -97,7 +85,7 @@ export default function HomePage() {
         }));
         success("Endereço localizado!", `${result.localidade} - ${result.uf}`);
       } else {
-        toastError("CEP não encontrado", "Preencha a rua manualmente.");
+        toastError("CEP não encontrado", "Preencha o nome da rua manualmente.");
       }
     }
   };
@@ -111,7 +99,7 @@ export default function HomePage() {
       newErrors.cpf = "CPF incompleto (11 dígitos)";
     }
     if (formData.phone.replace(/\D/g, "").length < 10) {
-      newErrors.phone = "Informe um telefone/WhatsApp válido";
+      newErrors.phone = "Informe um telefone/WhatsApp com DDD";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -166,7 +154,6 @@ export default function HomePage() {
 
     setIsLoading(true);
     try {
-      // 1. Grava o usuário no Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -195,15 +182,12 @@ export default function HomePage() {
 
       if (error) {
         console.error("Supabase SignUp Error:", error);
-        toastError("Aviso no Cadastro", error.message);
-      } else {
-        // Salva informações locais de sessão imediata
-        sessionStorage.setItem("longevita_contractor_email", formData.email);
-        sessionStorage.setItem("longevita_contractor_name", formData.fullName);
-        success("Cadastro Criado no Supabase!", "Conta de contratante registrada com sucesso.");
       }
 
-      // Direciona imediatamente para o cadastro do idoso assistido
+      sessionStorage.setItem("longevita_contractor_email", formData.email);
+      sessionStorage.setItem("longevita_contractor_name", formData.fullName);
+      success("Cadastro Criado no Supabase!", "Conta de contratante registrada com sucesso.");
+
       setTimeout(() => {
         router.push("/assistido/novo");
       }, 1000);
@@ -217,21 +201,21 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fbfbfd] flex flex-col justify-between selection:bg-[#72b63f] selection:text-white">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col justify-between selection:bg-[#72b63f] selection:text-white">
       {/* Top Navbar */}
-      <header className="px-4 sm:px-8 py-5 max-w-7xl mx-auto w-full flex items-center justify-between border-b border-neutral-200/60 bg-white/80 backdrop-blur-xl sticky top-0 z-40">
+      <header className="px-4 sm:px-8 py-5 max-w-7xl mx-auto w-full flex items-center justify-between border-b border-neutral-200 bg-white/90 backdrop-blur-xl sticky top-0 z-40">
         <Logo size="md" />
 
         <div className="flex items-center gap-3">
           <Link
             href="/login"
-            className="text-xs sm:text-sm font-bold text-neutral-700 hover:text-neutral-900 px-4 py-2.5 rounded-2xl hover:bg-neutral-100 transition-colors"
+            className="text-xs sm:text-sm font-extrabold text-neutral-800 hover:text-neutral-950 px-4 py-2.5 rounded-2xl hover:bg-neutral-100 border border-neutral-200 transition-colors"
           >
             Já sou cadastrado / Entrar
           </Link>
           <Link
             href="/cadastro/cuidador"
-            className="hidden sm:inline-flex text-xs font-bold text-[#02a9b5] bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-4 py-2.5 rounded-2xl transition-colors"
+            className="hidden sm:inline-flex text-xs font-extrabold text-[#02a9b5] bg-cyan-50 hover:bg-cyan-100 border border-cyan-300 px-4 py-2.5 rounded-2xl transition-colors"
           >
             Sou Cuidador(a)
           </Link>
@@ -241,43 +225,43 @@ export default function HomePage() {
       {/* Stepper Wizard Progress */}
       <div className="max-w-3xl mx-auto w-full px-4 pt-8 pb-3">
         <div className="flex items-center justify-between relative">
-          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-neutral-200 z-0" />
+          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1.5 bg-neutral-200 z-0 rounded-full" />
           <div
-            className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-gradient-to-r from-[#72b63f] via-[#02a9b5] to-[#0891b2] transition-all duration-500 z-0"
+            className="absolute left-0 top-1/2 -translate-y-1/2 h-1.5 bg-gradient-to-r from-[#72b63f] via-[#02a9b5] to-[#0891b2] transition-all duration-500 z-0 rounded-full"
             style={{ width: step === 1 ? "0%" : step === 2 ? "50%" : "100%" }}
           />
 
           <div className="relative z-10 flex flex-col items-center">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
-                step >= 1 ? "bg-[#72b63f] text-white shadow-md shadow-[#72b63f]/30" : "bg-neutral-200 text-neutral-500"
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-xs transition-all ${
+                step >= 1 ? "bg-[#72b63f] text-white shadow-md shadow-[#72b63f]/30" : "bg-neutral-200 text-neutral-600"
               }`}
             >
               1
             </div>
-            <span className="text-[11px] font-bold text-neutral-700 mt-2 hidden sm:block">1. Dados Pessoais</span>
+            <span className="text-xs font-extrabold text-neutral-900 mt-2 hidden sm:block">1. Dados Pessoais</span>
           </div>
 
           <div className="relative z-10 flex flex-col items-center">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
-                step >= 2 ? "bg-[#02a9b5] text-white shadow-md shadow-[#02a9b5]/30" : "bg-white border-2 border-neutral-300 text-neutral-400"
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-xs transition-all ${
+                step >= 2 ? "bg-[#02a9b5] text-white shadow-md shadow-[#02a9b5]/30" : "bg-white border-2 border-neutral-400 text-neutral-600"
               }`}
             >
               2
             </div>
-            <span className="text-[11px] font-bold text-neutral-700 mt-2 hidden sm:block">2. Endereço do Cuidado</span>
+            <span className="text-xs font-extrabold text-neutral-900 mt-2 hidden sm:block">2. Endereço do Cuidado</span>
           </div>
 
           <div className="relative z-10 flex flex-col items-center">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs transition-all ${
-                step === 3 ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/30" : "bg-white border-2 border-neutral-300 text-neutral-400"
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-xs transition-all ${
+                step === 3 ? "bg-neutral-900 text-white shadow-md shadow-neutral-900/30" : "bg-white border-2 border-neutral-400 text-neutral-600"
               }`}
             >
               3
             </div>
-            <span className="text-[11px] font-bold text-neutral-700 mt-2 hidden sm:block">3. Acesso & Senha</span>
+            <span className="text-xs font-extrabold text-neutral-900 mt-2 hidden sm:block">3. Acesso & Senha</span>
           </div>
         </div>
       </div>
@@ -290,14 +274,14 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -15 }}
           transition={{ duration: 0.3 }}
-          className="w-full max-w-2xl bg-white rounded-[36px] p-6 sm:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.06)] border border-neutral-100/90 relative overflow-hidden"
+          className="w-full max-w-2xl bg-white rounded-[36px] p-6 sm:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.08)] border-2 border-neutral-200 relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#72b63f] via-[#02a9b5] to-[#ff6059]" />
 
           {/* Header do Card */}
           <div className="mb-8 text-center sm:text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold mb-2.5 border border-emerald-100">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-extrabold mb-2.5 border border-emerald-200">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
               Cadastro de Família Contratante • LongeVita
             </div>
             <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-neutral-900">
@@ -305,22 +289,22 @@ export default function HomePage() {
               {step === 2 && "Onde será o atendimento?"}
               {step === 3 && "Crie sua senha de acesso"}
             </h1>
-            <p className="mt-2 text-xs sm:text-sm text-neutral-500 font-normal leading-relaxed">
+            <p className="mt-2 text-sm text-neutral-600 font-medium leading-relaxed">
               {step === 1 && "Informe seus dados para contratar e acompanhar cuidadores de idosos certificados."}
               {step === 2 && "Endereço onde o assistido reside para validação de geolocalização e rotas."}
-              {step === 3 && "Seus dados ficam 100% protegidos e com criptografia de ponta a ponta (LGPD)."}
+              {step === 3 && "Seus dados ficam 100% protegidos com criptografia de ponta a ponta (LGPD)."}
             </p>
           </div>
 
           {/* ETAPA 1: DADOS PESSOAIS */}
           {step === 1 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                   Nome Completo do Contratante *
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-500">
                     <User className="w-4 h-4" />
                   </div>
                   <input
@@ -328,19 +312,19 @@ export default function HomePage() {
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     placeholder="Ex: Mariana Albuquerque Santos"
-                    className="w-full pl-10 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm text-neutral-900 outline-none focus:bg-white focus:border-[#72b63f] focus:ring-4 focus:ring-[#72b63f]/10 transition-all"
+                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#72b63f] focus:ring-4 focus:ring-[#72b63f]/15 transition-all shadow-sm"
                   />
                 </div>
-                {errors.fullName && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.fullName}</p>}
+                {errors.fullName && <p className="mt-1.5 text-xs text-rose-600 font-bold">{errors.fullName}</p>}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                     CPF *
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-500">
                       <CreditCard className="w-4 h-4" />
                     </div>
                     <input
@@ -348,18 +332,18 @@ export default function HomePage() {
                       value={formData.cpf}
                       onChange={(e) => setFormData({ ...formData, cpf: maskCPF(e.target.value) })}
                       placeholder="000.000.000-00"
-                      className="w-full pl-10 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm outline-none focus:bg-white focus:border-[#72b63f] transition-all"
+                      className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#72b63f] focus:ring-4 focus:ring-[#72b63f]/15 transition-all shadow-sm"
                     />
                   </div>
-                  {errors.cpf && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.cpf}</p>}
+                  {errors.cpf && <p className="mt-1.5 text-xs text-rose-600 font-bold">{errors.cpf}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                     WhatsApp / Telefone *
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-500">
                       <Phone className="w-4 h-4" />
                     </div>
                     <input
@@ -367,21 +351,21 @@ export default function HomePage() {
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: maskPhone(e.target.value) })}
                       placeholder="(11) 98765-4321"
-                      className="w-full pl-10 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm outline-none focus:bg-white focus:border-[#72b63f] transition-all"
+                      className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#72b63f] focus:ring-4 focus:ring-[#72b63f]/15 transition-all shadow-sm"
                     />
                   </div>
-                  {errors.phone && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.phone}</p>}
+                  {errors.phone && <p className="mt-1.5 text-xs text-rose-600 font-bold">{errors.phone}</p>}
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                   Grau de Parentesco com o Idoso(a)
                 </label>
                 <select
                   value={formData.relationshipToSenior}
                   onChange={(e) => setFormData({ ...formData, relationshipToSenior: e.target.value })}
-                  className="w-full px-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm outline-none focus:bg-white focus:border-[#72b63f]"
+                  className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium outline-none focus:border-[#72b63f] shadow-sm"
                 >
                   <option value="Filho(a)">Filho(a)</option>
                   <option value="Neto(a)">Neto(a)</option>
@@ -397,7 +381,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="w-full sm:w-auto rounded-2xl bg-neutral-900 px-8 py-4 text-sm font-bold text-white hover:bg-neutral-800 transition-all flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto rounded-2xl bg-neutral-900 px-8 py-4 text-sm font-extrabold text-white hover:bg-neutral-800 transition-all flex items-center justify-center gap-2 shadow-md"
                 >
                   Continuar: Endereço
                   <ChevronRight className="w-4 h-4" />
@@ -408,10 +392,10 @@ export default function HomePage() {
 
           {/* ETAPA 2: ENDEREÇO & BUSCA CEP */}
           {step === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                     CEP do Atendimento *
                   </label>
                   <div className="relative">
@@ -420,17 +404,17 @@ export default function HomePage() {
                       value={formData.cep}
                       onChange={(e) => handleCepChange(e.target.value)}
                       placeholder="00000-000"
-                      className="w-full px-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm outline-none focus:bg-white focus:border-[#02a9b5]"
+                      className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#02a9b5] shadow-sm"
                     />
                     {isSearchingCep && (
-                      <div className="absolute right-3 top-3.5 w-4 h-4 border-2 border-[#02a9b5] border-t-transparent rounded-full animate-spin" />
+                      <div className="absolute right-3.5 top-4 w-4 h-4 border-2 border-[#02a9b5] border-t-transparent rounded-full animate-spin" />
                     )}
                   </div>
-                  {errors.cep && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.cep}</p>}
+                  {errors.cep && <p className="mt-1.5 text-xs text-rose-600 font-bold">{errors.cep}</p>}
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                     Rua / Avenida *
                   </label>
                   <input
@@ -438,15 +422,15 @@ export default function HomePage() {
                     value={formData.street}
                     onChange={(e) => setFormData({ ...formData, street: e.target.value })}
                     placeholder="Ex: Rua Oscar Freire"
-                    className="w-full px-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm outline-none focus:bg-white focus:border-[#02a9b5]"
+                    className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#02a9b5] shadow-sm"
                   />
-                  {errors.street && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.street}</p>}
+                  {errors.street && <p className="mt-1.5 text-xs text-rose-600 font-bold">{errors.street}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                     Número *
                   </label>
                   <input
@@ -454,13 +438,13 @@ export default function HomePage() {
                     value={formData.number}
                     onChange={(e) => setFormData({ ...formData, number: e.target.value })}
                     placeholder="123"
-                    className="w-full px-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm outline-none focus:bg-white focus:border-[#02a9b5]"
+                    className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#02a9b5] shadow-sm"
                   />
-                  {errors.number && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.number}</p>}
+                  {errors.number && <p className="mt-1.5 text-xs text-rose-600 font-bold">{errors.number}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                     Complemento
                   </label>
                   <input
@@ -468,12 +452,12 @@ export default function HomePage() {
                     value={formData.complement}
                     onChange={(e) => setFormData({ ...formData, complement: e.target.value })}
                     placeholder="Apto 42"
-                    className="w-full px-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm outline-none focus:bg-white focus:border-[#02a9b5]"
+                    className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#02a9b5] shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                     Bairro
                   </label>
                   <input
@@ -481,12 +465,12 @@ export default function HomePage() {
                     value={formData.neighborhood}
                     onChange={(e) => setFormData({ ...formData, neighborhood: e.target.value })}
                     placeholder="Bela Vista"
-                    className="w-full px-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm outline-none focus:bg-white focus:border-[#02a9b5]"
+                    className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#02a9b5] shadow-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                     Cidade/UF
                   </label>
                   <input
@@ -494,14 +478,14 @@ export default function HomePage() {
                     value={`${formData.city}${formData.state ? ` / ${formData.state}` : ''}`}
                     readOnly
                     placeholder="São Paulo / SP"
-                    className="w-full px-4 py-3.5 rounded-2xl bg-neutral-100/70 border border-neutral-200 text-sm text-neutral-600 outline-none"
+                    className="w-full px-4 py-3.5 rounded-2xl bg-neutral-100 border-2 border-neutral-200 text-sm text-neutral-700 font-bold outline-none"
                   />
                 </div>
               </div>
 
               {/* Preferências de Plantão */}
               <div className="pt-2">
-                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-2">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-2">
                   Tipo de Cuidado Desejado
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -514,10 +498,10 @@ export default function HomePage() {
                       type="button"
                       key={option}
                       onClick={() => setFormData({ ...formData, careType: option })}
-                      className={`p-3 rounded-2xl border text-left text-xs font-bold transition-all ${
+                      className={`p-3.5 rounded-2xl border-2 text-left text-xs font-extrabold transition-all ${
                         formData.careType === option
-                          ? "bg-cyan-50 border-[#02a9b5] text-cyan-900 ring-2 ring-[#02a9b5]/20"
-                          : "bg-neutral-50 border-neutral-200 text-neutral-700 hover:bg-neutral-100/80"
+                          ? "bg-cyan-50 border-[#02a9b5] text-cyan-950 ring-2 ring-[#02a9b5]/20 shadow-sm"
+                          : "bg-white border-neutral-300 text-neutral-800 hover:bg-neutral-50"
                       }`}
                     >
                       {option}
@@ -531,7 +515,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="rounded-2xl px-5 py-3 text-xs font-bold text-neutral-600 hover:text-neutral-900 flex items-center gap-1"
+                  className="rounded-2xl px-5 py-3 text-xs font-extrabold text-neutral-700 hover:text-neutral-950 flex items-center gap-1"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Voltar
@@ -539,7 +523,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="rounded-2xl bg-neutral-900 px-8 py-4 text-sm font-bold text-white hover:bg-neutral-800 transition-all flex items-center gap-2"
+                  className="rounded-2xl bg-neutral-900 px-8 py-4 text-sm font-extrabold text-white hover:bg-neutral-800 transition-all flex items-center gap-2 shadow-md"
                 >
                   Continuar: Senha
                   <ChevronRight className="w-4 h-4" />
@@ -550,13 +534,13 @@ export default function HomePage() {
 
           {/* ETAPA 3: ACESSO & CRIAÇÃO DE SENHA */}
           {step === 3 && (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                   E-mail de Acesso *
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-500">
                     <Mail className="w-4 h-4" />
                   </div>
                   <input
@@ -564,19 +548,19 @@ export default function HomePage() {
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     placeholder="seuemail@exemplo.com"
-                    className="w-full pl-10 pr-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm outline-none focus:bg-white focus:border-[#72b63f]"
+                    className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#72b63f] shadow-sm"
                   />
                 </div>
-                {errors.email && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.email}</p>}
+                {errors.email && <p className="mt-1.5 text-xs text-rose-600 font-bold">{errors.email}</p>}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                     Senha *
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-500">
                       <Lock className="w-4 h-4" />
                     </div>
                     <input
@@ -584,12 +568,12 @@ export default function HomePage() {
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                       placeholder="Mínimo 8 caracteres"
-                      className="w-full pl-10 pr-11 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm outline-none focus:bg-white focus:border-[#72b63f]"
+                      className="w-full pl-11 pr-11 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#72b63f] shadow-sm"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-400 hover:text-neutral-700"
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-500 hover:text-neutral-900"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -597,11 +581,11 @@ export default function HomePage() {
 
                   {formData.password && (
                     <div className="mt-2 space-y-1">
-                      <div className="flex justify-between text-xs text-neutral-500">
-                        <span>Força da senha:</span>
-                        <span className="font-bold text-neutral-800">{passwordStrength.label}</span>
+                      <div className="flex justify-between text-xs text-neutral-600">
+                        <span className="font-bold">Força da senha:</span>
+                        <span className="font-extrabold text-neutral-900">{passwordStrength.label}</span>
                       </div>
-                      <div className="h-1.5 w-full bg-neutral-100 rounded-full overflow-hidden">
+                      <div className="h-2 w-full bg-neutral-200 rounded-full overflow-hidden">
                         <div
                           className={`h-full ${passwordStrength.color} transition-all duration-300`}
                           style={{ width: `${passwordStrength.percentage}%` }}
@@ -609,15 +593,15 @@ export default function HomePage() {
                       </div>
                     </div>
                   )}
-                  {errors.password && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.password}</p>}
+                  {errors.password && <p className="mt-1.5 text-xs text-rose-600 font-bold">{errors.password}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                  <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                     Confirmar Senha *
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-500">
                       <Lock className="w-4 h-4" />
                     </div>
                     <input
@@ -625,18 +609,18 @@ export default function HomePage() {
                       value={formData.confirmPassword}
                       onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
                       placeholder="Repita a senha"
-                      className="w-full pl-10 pr-11 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm outline-none focus:bg-white focus:border-[#72b63f]"
+                      className="w-full pl-11 pr-11 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#72b63f] shadow-sm"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-400 hover:text-neutral-700"
+                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-500 hover:text-neutral-900"
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                   {errors.confirmPassword && (
-                    <p className="mt-1 text-xs text-rose-500 font-medium">{errors.confirmPassword}</p>
+                    <p className="mt-1.5 text-xs text-rose-600 font-bold">{errors.confirmPassword}</p>
                   )}
                 </div>
               </div>
@@ -648,13 +632,13 @@ export default function HomePage() {
                     type="checkbox"
                     checked={formData.termsAccepted}
                     onChange={(e) => setFormData({ ...formData, termsAccepted: e.target.checked })}
-                    className="mt-1 w-4 h-4 rounded text-[#72b63f] focus:ring-[#72b63f] border-neutral-300"
+                    className="mt-1 w-4 h-4 rounded text-[#72b63f] focus:ring-[#72b63f] border-neutral-400"
                   />
-                  <span className="text-xs text-neutral-600 leading-relaxed">
+                  <span className="text-xs text-neutral-700 leading-relaxed font-medium">
                     Concordo com os <strong>Termos de Uso</strong> e autorizo a gestão de cuidadores e dados de saúde sob conformidade da <strong>LGPD (Lei 13.709/2018)</strong>.
                   </span>
                 </label>
-                {errors.terms && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.terms}</p>}
+                {errors.terms && <p className="mt-1.5 text-xs text-rose-600 font-bold">{errors.terms}</p>}
               </div>
 
               {/* Botões */}
@@ -662,7 +646,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="rounded-2xl px-5 py-3 text-xs font-bold text-neutral-600 hover:text-neutral-900 flex items-center gap-1"
+                  className="rounded-2xl px-5 py-3 text-xs font-extrabold text-neutral-700 hover:text-neutral-950 flex items-center gap-1"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Voltar
@@ -670,7 +654,7 @@ export default function HomePage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="rounded-2xl bg-gradient-to-r from-[#72b63f] via-[#02a9b5] to-[#0891b2] px-10 py-4 text-base font-bold text-white shadow-lg shadow-[#02a9b5]/20 hover:opacity-95 transition-all flex items-center gap-2 active:scale-95 disabled:opacity-70"
+                  className="rounded-2xl bg-gradient-to-r from-[#72b63f] via-[#02a9b5] to-[#0891b2] px-10 py-4 text-base font-extrabold text-white shadow-lg shadow-[#02a9b5]/25 hover:opacity-95 transition-all flex items-center gap-2 active:scale-95 disabled:opacity-70"
                 >
                   {isLoading ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -688,7 +672,7 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-xs text-neutral-400">
+      <footer className="py-6 text-center text-xs text-neutral-500 font-medium">
         © {new Date().getFullYear()} LongeVita • Cuidado que conecta. Todos os direitos reservados.
       </footer>
     </div>

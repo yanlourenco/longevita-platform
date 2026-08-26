@@ -327,7 +327,7 @@ export default function NovoAssistidoPage() {
                 {/* Nome e Data */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                    <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                       Nome Completo do Idoso *
                     </label>
                     <input
@@ -335,19 +335,19 @@ export default function NovoAssistidoPage() {
                       value={nome}
                       onChange={(e) => setNome(e.target.value)}
                       placeholder="Ex: Helena Ribeiro de Castro"
-                      className="w-full px-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm text-neutral-900 outline-none focus:bg-white focus:border-[#72b63f] focus:ring-4 focus:ring-[#72b63f]/10"
+                      className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#72b63f] focus:ring-4 focus:ring-[#72b63f]/15 shadow-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                    <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                       Data de Nascimento *
                     </label>
                     <input
                       type="date"
                       value={dataNascimento}
                       onChange={(e) => setDataNascimento(e.target.value)}
-                      className="w-full px-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm text-neutral-900 outline-none focus:bg-white focus:border-[#72b63f]"
+                      className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium outline-none focus:border-[#72b63f] shadow-sm"
                     />
                     {calculatedAge !== null && (
                       <span className="inline-block mt-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
@@ -441,7 +441,7 @@ export default function NovoAssistidoPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+                    <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                       Plano de Saúde (Opcional)
                     </label>
                     <input
@@ -449,14 +449,14 @@ export default function NovoAssistidoPage() {
                       value={planoSaude}
                       onChange={(e) => setPlanoSaude(e.target.value)}
                       placeholder="Ex: SulAmérica / Bradesco Saúde"
-                      className="w-full px-4 py-3.5 rounded-2xl bg-neutral-50 border border-neutral-200 text-sm text-neutral-900 outline-none focus:bg-white focus:border-[#72b63f]"
+                      className="w-full px-4 py-3.5 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#72b63f] shadow-sm"
                     />
                   </div>
                 </div>
 
                 {/* Contatos de Emergência */}
-                <div className="p-5 rounded-2xl bg-neutral-50/80 border border-neutral-200/80 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-700">
+                <div className="p-5 rounded-2xl bg-white border-2 border-neutral-300 space-y-3 shadow-sm">
+                  <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-neutral-900">
                     <Phone className="w-4 h-4 text-emerald-600" />
                     Contato de Emergência Principal
                   </div>
@@ -466,14 +466,14 @@ export default function NovoAssistidoPage() {
                       value={contatoEmergenciaNome}
                       onChange={(e) => setContatoEmergenciaNome(e.target.value)}
                       placeholder="Nome do contato (Ex: Filho Carlos)"
-                      className="w-full px-4 py-3 rounded-xl bg-white border border-neutral-200 text-sm outline-none focus:border-[#72b63f]"
+                      className="w-full px-4 py-3 rounded-xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 placeholder:text-neutral-500 font-medium outline-none focus:border-[#72b63f]"
                     />
                     <input
                       type="text"
                       value={contatoEmergenciaTelefone}
                       onChange={(e) => setContatoEmergenciaTelefone(maskPhone(e.target.value))}
                       placeholder="(11) 98888-7777"
-                      className="w-full px-4 py-3 rounded-xl bg-white border border-neutral-200 text-sm outline-none focus:border-[#72b63f]"
+                      className="w-full px-4 py-3 rounded-xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 placeholder:text-neutral-500 font-medium outline-none focus:border-[#72b63f]"
                     />
                   </div>
                 </div>
@@ -520,7 +520,7 @@ export default function NovoAssistidoPage() {
                     <span className="text-[#02a9b5] text-xs font-semibold">Sugestões automáticas</span>
                   </label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-400">
+                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-500">
                       <Search className="w-5 h-5" />
                     </div>
                     <input
@@ -532,7 +532,7 @@ export default function NovoAssistidoPage() {
                       }}
                       onFocus={() => setIsSearchOpen(true)}
                       placeholder="Digite para buscar: ex. Alzheimer, Diabetes, Parkinson, AVC, Hipertensão..."
-                      className="w-full pl-12 pr-4 py-4 rounded-2xl bg-neutral-50 border-2 border-neutral-200 text-sm text-neutral-900 outline-none focus:bg-white focus:border-[#02a9b5] focus:ring-4 focus:ring-[#02a9b5]/10 transition-all font-medium"
+                      className="w-full pl-12 pr-4 py-4 rounded-2xl bg-white border-2 border-neutral-300 text-sm text-neutral-900 placeholder:text-neutral-500 placeholder:opacity-100 outline-none focus:border-[#02a9b5] focus:ring-4 focus:ring-[#02a9b5]/15 transition-all font-semibold shadow-sm"
                     />
                   </div>
 

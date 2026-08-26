@@ -173,11 +173,11 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             {/* Input E-mail / CPF */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1.5">
+              <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900 mb-1.5">
                 E-mail ou CPF
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-500">
                   <Mail className="w-4 h-4" />
                 </div>
                 <input
@@ -188,10 +188,10 @@ export default function LoginPage() {
                     if (errors.identifier) setErrors((prev) => ({ ...prev, identifier: undefined }));
                   }}
                   placeholder="exemplo@email.com ou 000.000.000-00"
-                  className={`w-full pl-10 pr-4 py-3.5 rounded-2xl bg-neutral-50 border text-sm text-neutral-900 transition-all outline-none focus:bg-white focus:ring-4 ${
+                  className={`w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white border-2 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 transition-all outline-none focus:ring-4 shadow-sm ${
                     errors.identifier
-                      ? "border-rose-300 focus:border-rose-500 focus:ring-rose-500/10"
-                      : "border-neutral-200/80 focus:border-[#02a9b5] focus:ring-[#02a9b5]/10"
+                      ? "border-rose-400 focus:border-rose-600 focus:ring-rose-500/15"
+                      : "border-neutral-300 focus:border-[#02a9b5] focus:ring-[#02a9b5]/15"
                   }`}
                 />
               </div>
@@ -199,7 +199,7 @@ export default function LoginPage() {
                 <motion.p
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-1.5 text-xs text-rose-500 font-medium flex items-center gap-1"
+                  className="mt-1.5 text-xs text-rose-600 font-bold flex items-center gap-1"
                 >
                   <AlertCircle className="w-3.5 h-3.5" />
                   {errors.identifier}
@@ -210,19 +210,19 @@ export default function LoginPage() {
             {/* Input Senha */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-bold uppercase tracking-wider text-neutral-700">
+                <label className="block text-xs font-extrabold uppercase tracking-wider text-neutral-900">
                   Senha de Acesso
                 </label>
                 <button
                   type="button"
                   onClick={() => setForgotModalOpen(true)}
-                  className="text-xs font-semibold text-[#02a9b5] hover:text-[#0891b2] transition-colors"
+                  className="text-xs font-bold text-[#02a9b5] hover:text-[#0891b2] transition-colors"
                 >
                   Esqueci minha senha
                 </button>
               </div>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-neutral-400">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-neutral-500">
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
@@ -233,16 +233,16 @@ export default function LoginPage() {
                     if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }));
                   }}
                   placeholder="••••••••"
-                  className={`w-full pl-10 pr-11 py-3.5 rounded-2xl bg-neutral-50 border text-sm text-neutral-900 transition-all outline-none focus:bg-white focus:ring-4 ${
+                  className={`w-full pl-11 pr-11 py-3.5 rounded-2xl bg-white border-2 text-sm text-neutral-900 font-medium placeholder:text-neutral-500 placeholder:opacity-100 transition-all outline-none focus:ring-4 shadow-sm ${
                     errors.password
-                      ? "border-rose-300 focus:border-rose-500 focus:ring-rose-500/10"
-                      : "border-neutral-200/80 focus:border-[#02a9b5] focus:ring-[#02a9b5]/10"
+                      ? "border-rose-400 focus:border-rose-600 focus:ring-rose-500/15"
+                      : "border-neutral-300 focus:border-[#02a9b5] focus:ring-[#02a9b5]/15"
                   }`}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-400 hover:text-neutral-700 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-neutral-500 hover:text-neutral-900 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -251,7 +251,7 @@ export default function LoginPage() {
                 <motion.p
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-1.5 text-xs text-rose-500 font-medium flex items-center gap-1"
+                  className="mt-1.5 text-xs text-rose-600 font-bold flex items-center gap-1"
                 >
                   <AlertCircle className="w-3.5 h-3.5" />
                   {errors.password}
