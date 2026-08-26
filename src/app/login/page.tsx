@@ -159,24 +159,24 @@ export default function LoginPage() {
           {/* Subtle Accent Line */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#72b63f] to-[#02a9b5]" />
 
-          {/* Banner de Demonstração Executiva */}
+          {/* Banner de Acesso Administrativo */}
           <div className="mb-6 p-4 rounded-2xl bg-neutral-900 text-white border border-neutral-800 shadow-sm">
             <div className="flex items-center justify-between gap-2 mb-1.5">
               <span className="text-xs font-bold uppercase tracking-wider text-[#72b63f] flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                Acesso de Demonstração
+                Acesso Administrativo (ADM)
               </span>
               <span className="text-[10px] bg-white/15 px-2 py-0.5 rounded-md font-bold">1 Clique</span>
             </div>
             <p className="text-xs text-neutral-300 mb-3">
-              Acesse como Administrador Master para apresentar todas as visões da plataforma.
+              Ambiente de gestão geral, homologação de profissionais e auditoria.
             </p>
             <button
               type="button"
               onClick={handleAdminQuickAccess}
               className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#72b63f] to-[#02a9b5] text-xs font-bold text-white hover:opacity-95 transition-opacity flex items-center justify-center gap-1.5 shadow-sm"
             >
-              Entrar como Administrador Master
+              Entrar como ADM
             </button>
           </div>
 

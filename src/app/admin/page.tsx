@@ -63,7 +63,7 @@ export default function AdminPage() {
           <div className="flex items-center gap-3">
             <Logo size="md" />
             <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-900 text-white text-[11px] font-bold uppercase tracking-wider">
-              Painel de Gestão & Governança
+              Painel ADM
             </span>
           </div>
 
@@ -81,7 +81,7 @@ export default function AdminPage() {
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#02a9b5]" />
-              Administração
+              ADM
             </button>
             <Link
               href="/dashboard"

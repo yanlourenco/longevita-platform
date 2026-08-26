@@ -220,10 +220,10 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/admin"
-              className="text-xs font-bold text-neutral-700 hover:text-neutral-900 bg-neutral-100 hover:bg-neutral-200 px-3 py-2 rounded-xl border border-neutral-200 transition-colors flex items-center gap-1.5"
+              className="text-xs font-bold text-neutral-800 hover:text-neutral-950 bg-neutral-100 hover:bg-neutral-200 px-3 py-2 rounded-xl border border-neutral-200 transition-colors flex items-center gap-1.5"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-[#02a9b5]" />
-              Painel ADM
+              ADM
             </Link>
 
             {/* Central de Notificações Reativa */}
