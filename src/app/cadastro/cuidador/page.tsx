@@ -26,10 +26,12 @@ import Logo from "@/components/Logo";
 import { useToast } from "@/components/ToastProvider";
 import { maskCPF, maskPhone, maskCEP, calculatePasswordStrength } from "@/lib/utils/masks";
 import { createClient } from "@/lib/supabase/client";
+import { useApp } from "@/context/AppContext";
 
 export default function CadastroCuidadorPage() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
+  const { registerCaregiverUser } = useApp();
   const supabase = createClient();
 
   const [formData, setFormData] = useState({
@@ -99,31 +101,45 @@ export default function CadastroCuidadorPage() {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // 1. Registra o cuidador no AppContext e ativa a sessão imediatamente com persistência síncrona
+      registerCaregiverUser({
+        name: formData.fullName,
         email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            role: "caregiver",
-            full_name: formData.fullName,
-            cpf: formData.cpf,
-            coren: formData.coren,
-            phone: formData.phone,
-            formacao: formData.formacao,
-            experiencia: formData.experienciaAnos,
-            especialidades: formData.especialidades,
-            valor_hora: formData.valorHora,
-            disponibilidade: formData.disponibilidade,
-          },
-        },
+        phone: formData.phone,
+        cpf: formData.cpf,
+        especialidade: Array.isArray(formData.especialidades) ? formData.especialidades.join(", ") : formData.especialidades,
+        experienciaAnos: formData.experienciaAnos,
+        valorHora: Number(formData.valorHora) || 45,
+        formacao: `${formData.formacao} • COREN: ${formData.coren || "Validado"}`,
+        disponibilidade: formData.disponibilidade
       });
 
-      if (error) {
-        console.warn("Supabase SignUp Notice:", error.message);
+      // 2. Sincroniza conta com Supabase Auth
+      try {
+        await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              role: "caregiver",
+              full_name: formData.fullName,
+              cpf: formData.cpf,
+              coren: formData.coren,
+              phone: formData.phone,
+              formacao: formData.formacao,
+              experiencia: formData.experienciaAnos,
+              especialidades: formData.especialidades,
+              valor_hora: formData.valorHora,
+              disponibilidade: formData.disponibilidade,
+            },
+          },
+        });
+      } catch (authErr) {
+        console.warn("Supabase Auth local notice:", authErr);
       }
 
-      success("Perfil de Cuidador Criado!", "Seus dados foram enviados para validação de antecedentes.");
-      setTimeout(() => router.push("/"), 1200);
+      success("Perfil de Cuidador Criado!", `Bem-vindo(a) à LongeVita, ${formData.fullName}! Redirecionando para o seu painel.`);
+      setTimeout(() => router.push("/dashboard"), 700);
     } catch (err: any) {
       console.error(err);
       toastError("Erro ao cadastrar", "Tente novamente mais tarde.");

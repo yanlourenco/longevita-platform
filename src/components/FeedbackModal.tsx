@@ -22,15 +22,21 @@ const AVAILABLE_TAGS = [
 ];
 
 export default function FeedbackModal({ caregiver, isOpen, onClose }: FeedbackModalProps) {
-  const { addReview } = useApp();
+  const { addReview, currentUser } = useApp();
 
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
-  const [authorName, setAuthorName] = useState("Mariana Albuquerque");
-  const [authorRelation, setAuthorRelation] = useState("Filha da assistida");
+  const [authorName, setAuthorName] = useState(currentUser?.name || "Familiar Responsável");
+  const [authorRelation, setAuthorRelation] = useState("Familiar do assistido");
   const [comment, setComment] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>(["Pontualidade Rigorosa", "Paciência & Carinho"]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (currentUser?.name) {
+      setAuthorName(currentUser.name);
+    }
+  }, [currentUser, isOpen]);
 
   if (!isOpen || !caregiver) return null;
 

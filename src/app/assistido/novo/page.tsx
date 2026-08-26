@@ -29,6 +29,7 @@ import Logo from "@/components/Logo";
 import { useToast } from "@/components/ToastProvider";
 import { BANCO_CONDICOES_MEDICAS, ALERGIAS_COMUNS, CondicaoMedica } from "@/lib/utils/healthData";
 import { maskPhone, calculateAge } from "@/lib/utils/masks";
+import { useApp } from "@/context/AppContext";
 
 interface SelectedCondition {
   id: string;
@@ -47,6 +48,7 @@ interface Medication {
 export default function NovoAssistidoPage() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
+  const { addAssistido, currentUser } = useApp();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -180,52 +182,53 @@ export default function NovoAssistidoPage() {
   const handleFinalSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Formata nível de necessidade compatível com o enum SQL
-      const nivelMap: Record<string, "companhia" | "intermediario" | "acamado_alzheimer"> = {
-        independente: "companhia",
-        apoio: "intermediario",
-        cadeirante: "intermediario",
-        acamado: "acamado_alzheimer",
-      };
+      const savedAddress = typeof window !== "undefined" ? sessionStorage.getItem("longevita_temp_family_address") : null;
+      const savedPhone = typeof window !== "undefined" ? sessionStorage.getItem("longevita_temp_family_phone") : null;
 
-      const payload = {
+      const addressStr = savedAddress || "Rua Augusta, 1500 - Consolação, São Paulo";
+      const familyName = currentUser.name ? (currentUser.name.startsWith("Família") ? currentUser.name : `Família ${currentUser.name.split(" ").slice(-1)[0] || currentUser.name}`) : "Família Contratante";
+
+      // Adiciona no AppContext reativo
+      addAssistido({
+        familyId: currentUser.id || "fam-1",
+        familyName,
+        familyContact: savedPhone || currentUser.phone || contatoEmergenciaTelefone || "(11) 98765-4321",
         nome,
-        dataNascimento,
-        nivelNecessidade:
-          selectedConditions.some((c) => c.id === "alzheimer") || mobilidade === "acamado"
-            ? "acamado_alzheimer"
-            : nivelMap[mobilidade] || "companhia",
-        condicoesMedicas: JSON.stringify({
-          parentesco,
-          genero,
-          mobilidade,
-          alimentacao,
-          restricoesAlimentares,
-          contatoEmergencia: { nome: contatoEmergenciaNome, telefone: contatoEmergenciaTelefone },
-          planoSaude,
-          medicoResponsavel,
-          condicoes: selectedConditions,
-          medicamentos,
-          alergias,
-        }),
-      };
-
-      // Tenta gravar no endpoint Next.js API blindado
-      const res = await fetch("/api/idosos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        idade: calculatedAge || 78,
+        foto: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop",
+        parentesco,
+        endereco: addressStr,
+        bairro: addressStr.includes("-") ? addressStr.split("-")[1]?.split(",")[0]?.trim() || "Centro" : "Jardins",
+        cidade: "São Paulo, SP",
+        necessidades: `${parentesco} de ${calculatedAge || 78} anos. Mobilidade: ${mobilidade}. ${selectedConditions.map((c) => c.nome).join(", ")}.`,
+        comorbidades: selectedConditions.map((c) => c.nome),
+        medicacoes: medicamentos.map((m) => ({ nome: `${m.nome} (${m.dosagem})`, horario: m.horario })),
+        rotinas: [
+          `Alimentação: ${alimentacao}`,
+          `Mobilidade: ${mobilidade}`,
+          `Aferição de sinais vitais e rotinas médicas`
+        ],
+        contatoEmergencia: {
+          nome: contatoEmergenciaNome || currentUser.name || "Responsável Familiar",
+          parentesco: parentesco,
+          telefone: contatoEmergenciaTelefone || currentUser.phone || "(11) 99999-0000"
+        },
+        frequenciaPretendida: "Plantão Diurno (Segunda a Sexta)",
+        orcamentoHora: 45,
+        status: "disponivel",
+        sinaisVitais: {
+          pressao: "12x8 mmHg",
+          glicemia: "102 mg/dL",
+          frequenciaCardiaca: "72 bpm",
+          temperatura: "36.5 °C",
+          atualizadoEm: "Recém Cadastrado"
+        }
       });
 
-      // Se não autenticado no momento (modo demo local), salvar no sessionStorage e simular sucesso
-      if (res.status === 401 || !res.ok) {
-        sessionStorage.setItem("longevita_assistido_demo", JSON.stringify(payload));
-      }
-
-      success("Assistido cadastrado!", `${nome} foi adicionado(a) com sucesso ao seu ecossistema.`);
+      success("Assistido cadastrado!", `${nome} foi adicionado(a) com sucesso à sua conta familiar.`);
       setTimeout(() => {
         router.push("/dashboard");
-      }, 1200);
+      }, 1000);
     } catch (err) {
       console.error(err);
       toastError("Erro ao salvar", "Os dados foram preservados localmente.");

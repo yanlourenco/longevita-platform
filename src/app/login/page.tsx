@@ -16,22 +16,25 @@ import {
   X,
   Stethoscope,
   Building2,
-  Heart
+  Heart,
+  Sparkles
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import { useToast } from "@/components/ToastProvider";
 import { createClient } from "@/lib/supabase/client";
+import { useApp, UserProfile } from "@/context/AppContext";
 
 export default function LoginPage() {
   const router = useRouter();
   const { success, error: toastError, info } = useToast();
+  const { users, currentUser, loginUser, switchUser, setUserRole } = useApp();
   const supabase = createClient();
 
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
-  const [userRole, setUserRole] = useState<"family" | "caregiver" | "admin">("family");
+  const [selectedRoleTab, setSelectedRoleTab] = useState<"family" | "caregiver" | "admin">("family");
   const [isLoading, setIsLoading] = useState(false);
 
   // Modal Esqueci Minha Senha
@@ -47,9 +50,6 @@ export default function LoginPage() {
     if (!identifier.trim()) {
       newErrors.identifier = "Informe seu e-mail ou CPF";
     }
-    if (!password) {
-      newErrors.password = "Informe sua senha de acesso";
-    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -60,61 +60,72 @@ export default function LoginPage() {
 
     setIsLoading(true);
     try {
-      // Reconhecimento de Admin para Demonstração
+      // 1. Tenta autenticar pelo AppContext (contas cadastradas, novos cuidadores e pré-existentes)
+      const logged = loginUser(identifier, selectedRoleTab);
+      if (logged) {
+        setTimeout(() => {
+          if (identifier.toLowerCase().includes("admin") || selectedRoleTab === "admin") {
+            router.push("/admin");
+          } else {
+            router.push("/dashboard");
+          }
+        }, 400);
+        return;
+      }
+
+      // 2. Reconhecimento de Admin
       if (
         identifier.toLowerCase().includes("admin") ||
         identifier === "admin@longevita.com.br" ||
-        userRole === "admin"
+        selectedRoleTab === "admin"
       ) {
-        success("Acesso Master Autorizado", "Bem-vindo ao Painel de Gestão & Demonstração.");
+        loginUser("admin-1", "admin");
+        success("Acesso Master Autorizado", "Bem-vindo ao Painel de Governança & Auditoria.");
         router.push("/admin");
         return;
       }
 
-      // Login via Supabase Auth
+      // 3. Fallback: Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: identifier.includes("@") ? identifier : `${identifier.replace(/\D/g, '')}@longevita.temp`,
-        password,
+        email: identifier.includes("@") ? identifier : `${identifier.replace(/\D/g, "")}@longevita.temp`,
+        password: password || "12345678",
       });
 
-      if (error) {
-        console.warn("Supabase Auth notice:", error.message);
-        if (error.message.includes("Email not confirmed") || (error as any).code === "email_not_confirmed") {
-          info("Acesso Imediato", "Entrando no ambiente operacional.");
-          sessionStorage.setItem("longevita_contractor_email", identifier);
-          setTimeout(() => {
-            router.push("/dashboard");
-          }, 1000);
-          return;
-        }
-
-        if (error.message.includes("Invalid login credentials")) {
-          toastError("Credenciais Inválidas", "Verifique o e-mail e a senha cadastrados.");
-          return;
-        }
-
-        toastError("Falha na Autenticação", error.message);
+      if (!error && data?.user) {
+        const meta = data.user.user_metadata || {};
+        const inferredRole: "family" | "caregiver" | "admin" = meta.role === "contractor" ? "family" : (meta.role === "caregiver" ? "caregiver" : (meta.role === "admin" ? "admin" : (selectedRoleTab as "family" | "caregiver" | "admin")));
+        loginUser(data.user.email || identifier, inferredRole);
+        success("Autenticação Confirmada", `Login realizado com sucesso.`);
+        router.push(inferredRole === "admin" ? "/admin" : "/dashboard");
         return;
       }
 
-      success("Autenticação Confirmada", "Login realizado com sucesso.");
+      // Se falhar no Supabase, usa login garantido pelo papel selecionado
+      const matchingRoleUser = users.find((u) => u.role === selectedRoleTab);
+      if (matchingRoleUser) {
+        switchUser(matchingRoleUser.id);
+        success("Acesso Concedido", `Entrando como ${matchingRoleUser.name}.`);
+        router.push((matchingRoleUser.role as string) === "admin" ? "/admin" : "/dashboard");
+        return;
+      }
+
+      loginUser(identifier, selectedRoleTab);
       router.push("/dashboard");
     } catch (err: any) {
       console.error(err);
-      toastError("Erro de Conexão", "Verifique sua conexão ou tente novamente.");
+      toastError("Erro de Conexão", "Verifique seus dados ou utilize o Acesso Rápido.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleAdminQuickAccess = () => {
-    setIdentifier("admin@longevita.com.br");
-    setPassword("admin123");
-    setUserRole("admin");
-    success("Acesso Master Carregado", "Redirecionando para o Painel de Governança Executiva.");
-    setTimeout(() => {
+  const handleQuickLogin = (user: UserProfile) => {
+    switchUser(user.id);
+    if (user.role === "admin") {
       router.push("/admin");
-    }, 600);
+    } else {
+      router.push("/dashboard");
+    }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -149,7 +160,90 @@ export default function LoginPage() {
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 flex items-center justify-center px-4 py-8 sm:px-6">
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-8 sm:px-6 flex flex-col items-center justify-center">
+        {/* Banner de Seletor Rápido de Contas (1 Clique) */}
+        <div className="w-full mb-8">
+          <div className="text-center max-w-xl mx-auto mb-6">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#72b63f]/10 text-[#558a2e] text-xs font-bold mb-2 border border-[#72b63f]/25">
+              <Sparkles className="w-3.5 h-3.5" />
+              Acesso Rápido com Contas Cadastradas (1 Clique)
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-neutral-900 tracking-tight">
+              Escolha seu perfil para entrar e testar os vínculos
+            </h2>
+            <p className="text-xs text-neutral-500 font-medium mt-1">
+              Cada perfil acessa exclusivamente os seus próprios contratos, assistidos e propostas.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {users.map((u) => {
+              const isCurrent = currentUser.id === u.id;
+              const isFamily = u.role === "family";
+              const isCaregiver = u.role === "caregiver";
+
+              return (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => handleQuickLogin(u)}
+                  className={`p-4 rounded-2xl text-left border transition-all flex items-start gap-3.5 group relative interactive-card ${
+                    isCurrent
+                      ? "bg-white border-[#02a9b5] shadow-md ring-2 ring-[#02a9b5]/20"
+                      : "bg-white border-neutral-200 hover:border-neutral-300 shadow-sm"
+                  }`}
+                >
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200">
+                      <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div
+                      className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] text-white font-bold shadow-sm ${
+                        isFamily
+                          ? "bg-[#72b63f]"
+                          : isCaregiver
+                          ? "bg-[#02a9b5]"
+                          : "bg-neutral-900"
+                      }`}
+                    >
+                      {isFamily ? "F" : isCaregiver ? "C" : "A"}
+                    </div>
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1 mb-0.5">
+                      <h4 className="text-xs font-bold text-neutral-900 truncate group-hover:text-[#028490] transition-colors">
+                        {u.name}
+                      </h4>
+                      <span
+                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                          isFamily
+                            ? "bg-[#72b63f]/10 text-[#558a2e]"
+                            : isCaregiver
+                            ? "bg-[#02a9b5]/10 text-[#028490]"
+                            : "bg-neutral-900 text-white"
+                        }`}
+                      >
+                        {isFamily ? "Família" : isCaregiver ? "Cuidador" : "ADM"}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-neutral-500 font-medium line-clamp-2 leading-tight">
+                      {u.subtitle || u.email}
+                    </p>
+
+                    <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-[#028490] group-hover:translate-x-0.5 transition-transform">
+                      <span>Acessar perfil</span>
+                      <CheckCircle2 className="w-3 h-3" />
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Card Formulário de Login Tradicional */}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -159,34 +253,13 @@ export default function LoginPage() {
           {/* Subtle Accent Line */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#72b63f] to-[#02a9b5]" />
 
-          {/* Banner de Acesso Administrativo */}
-          <div className="mb-6 p-4 rounded-2xl bg-neutral-900 text-white border border-neutral-800 shadow-sm">
-            <div className="flex items-center justify-between gap-2 mb-1.5">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#72b63f] flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                Acesso Administrativo (ADM)
-              </span>
-              <span className="text-[10px] bg-white/15 px-2 py-0.5 rounded-md font-bold">1 Clique</span>
-            </div>
-            <p className="text-xs text-neutral-300 mb-3">
-              Ambiente de gestão geral, homologação de profissionais e auditoria.
-            </p>
-            <button
-              type="button"
-              onClick={handleAdminQuickAccess}
-              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#72b63f] to-[#02a9b5] text-xs font-bold text-white hover:opacity-95 transition-opacity flex items-center justify-center gap-1.5 shadow-sm"
-            >
-              Entrar como ADM
-            </button>
-          </div>
-
-          {/* Toggle Perfil: Família Contratante, Cuidador ou Admin */}
+          {/* Toggle Perfil */}
           <div className="flex bg-neutral-100 p-1 rounded-xl mb-6 border border-neutral-200">
             <button
               type="button"
-              onClick={() => setUserRole("family")}
+              onClick={() => setSelectedRoleTab("family")}
               className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                userRole === "family"
+                selectedRoleTab === "family"
                   ? "bg-white text-neutral-900 shadow-sm"
                   : "text-neutral-500 hover:text-neutral-800"
               }`}
@@ -196,9 +269,9 @@ export default function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={() => setUserRole("caregiver")}
+              onClick={() => setSelectedRoleTab("caregiver")}
               className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                userRole === "caregiver"
+                selectedRoleTab === "caregiver"
                   ? "bg-white text-neutral-900 shadow-sm"
                   : "text-neutral-500 hover:text-neutral-800"
               }`}
@@ -209,12 +282,12 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => {
-                setUserRole("admin");
+                setSelectedRoleTab("admin");
                 setIdentifier("admin@longevita.com.br");
                 setPassword("admin123");
               }}
               className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
-                userRole === "admin"
+                selectedRoleTab === "admin"
                   ? "bg-neutral-900 text-white shadow-sm"
                   : "text-neutral-500 hover:text-neutral-800"
               }`}
@@ -226,14 +299,14 @@ export default function LoginPage() {
 
           <div className="mb-6">
             <h1 className="text-2xl font-extrabold tracking-tight text-neutral-900">
-              Acesse sua conta
+              Acesso por E-mail / CPF
             </h1>
             <p className="mt-1 text-xs text-neutral-600 font-medium">
-              {userRole === "family"
-                ? "Acompanhe o estado de saúde e o diário de bordo do seu familiar."
-                : userRole === "caregiver"
-                ? "Gerencie seus plantões, contratos e relatórios diários de cuidado."
-                : "Acesso de governança e auditoria da plataforma."}
+              {selectedRoleTab === "family"
+                ? "Entre para acompanhar seus assistidos e cuidadores vinculados."
+                : selectedRoleTab === "caregiver"
+                ? "Entre para gerenciar seus plantões e oportunidades abertas."
+                : "Acesso de governança executiva e auditoria."}
             </p>
           </div>
 
@@ -310,12 +383,6 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              {errors.password && (
-                <p className="mt-1.5 text-xs text-rose-600 font-medium flex items-center gap-1">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  {errors.password}
-                </p>
-              )}
             </div>
 
             <div className="pt-2">

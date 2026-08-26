@@ -112,9 +112,46 @@ export interface AppNotification {
   patientName?: string;
 }
 
+export interface UserProfile {
+  id: string; // "fam-1", "fam-2", "cg-1", "cg-2", "admin-1", etc.
+  name: string;
+  email: string;
+  role: "family" | "caregiver" | "admin";
+  avatar?: string;
+  phone?: string;
+  cpf?: string;
+  familyId?: string;
+  caregiverId?: string;
+  subtitle?: string;
+}
+
 interface AppContextType {
+  currentUser: UserProfile;
+  users: UserProfile[];
   userRole: "family" | "caregiver" | "admin";
   setUserRole: (role: "family" | "caregiver" | "admin") => void;
+  loginUser: (userIdOrEmail: string, preferredRole?: "family" | "caregiver" | "admin") => boolean;
+  registerFamilyUser: (data: {
+    name: string;
+    email: string;
+    phone?: string;
+    cpf?: string;
+    address?: { street?: string; city?: string; state?: string; neighborhood?: string };
+  }) => UserProfile;
+  registerCaregiverUser: (data: {
+    name: string;
+    email: string;
+    phone?: string;
+    cpf?: string;
+    especialidade?: string;
+    experienciaAnos?: string | number;
+    valorHora?: number;
+    formacao?: string;
+    disponibilidade?: string;
+  }) => { user: UserProfile; caregiver: Caregiver };
+  switchUser: (userId: string) => void;
+  logoutUser: () => void;
+
   caregivers: Caregiver[];
   contracts: Contract[];
   assistidos: Assistido[];
@@ -143,13 +180,13 @@ interface AppContextType {
   endShift: (contractId: string) => void;
 
   // Gestão de Cuidadores e Avaliações
-  addCaregiver: (caregiver: Omit<Caregiver, "id" | "reviews">) => void;
+  addCaregiver: (caregiver: Omit<Caregiver, "id" | "reviews">) => Caregiver;
   addReview: (caregiverId: string, review: Omit<Review, "id" | "caregiverId" | "date">) => void;
   approveCaregiver: (caregiverId: string) => void;
 
   // Gestão Clínica de Assistidos
   updateAssistido: (assistidoId: string, data: Partial<Assistido>) => void;
-  addAssistido: (assistido: Omit<Assistido, "id">) => void;
+  addAssistido: (assistido: Omit<Assistido, "id">) => Assistido;
 
   // Alertas e Notificações
   triggerDemoAlert: (title: string, message: string) => void;
@@ -163,6 +200,74 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 // =========================================================================
 // DADOS INICIAIS RIGOROSOS (ESTADO PADRÃO)
 // =========================================================================
+
+export const INITIAL_USERS: UserProfile[] = [
+  {
+    id: "fam-1",
+    name: "Mariana Albuquerque",
+    email: "mariana@albuquerque.com",
+    role: "family",
+    familyId: "fam-1",
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=400&auto=format&fit=crop",
+    phone: "(11) 98765-4321",
+    cpf: "123.456.789-00",
+    subtitle: "Família Albuquerque Castro (Vinculada à Cuidadora Ana Silva)"
+  },
+  {
+    id: "fam-2",
+    name: "Roberto Silveira",
+    email: "roberto@silveira.com",
+    role: "family",
+    familyId: "fam-2",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400&auto=format&fit=crop",
+    phone: "(11) 97654-3210",
+    cpf: "987.654.321-11",
+    subtitle: "Família Silveira (Proposta enviada para Seu Roberto)"
+  },
+  {
+    id: "cg-1",
+    name: "Ana Silva",
+    email: "ana.silva@longevita.com.br",
+    role: "caregiver",
+    caregiverId: "cg-1",
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=600&auto=format&fit=crop",
+    phone: "(11) 98111-2233",
+    cpf: "234.567.890-12",
+    subtitle: "Cuidadora Especialista (Vinculada à Dona Helena)"
+  },
+  {
+    id: "cg-2",
+    name: "Carlos Eduardo Mendes",
+    email: "carlos.mendes@longevita.com.br",
+    role: "caregiver",
+    caregiverId: "cg-2",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=600&auto=format&fit=crop",
+    phone: "(11) 98222-3344",
+    cpf: "345.678.901-23",
+    subtitle: "Cuidador Disponível (Proposta em análise com Seu Roberto)"
+  },
+  {
+    id: "cg-3",
+    name: "Mariana Oliveira",
+    email: "mariana.oliveira@longevita.com.br",
+    role: "caregiver",
+    caregiverId: "cg-3",
+    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=600&auto=format&fit=crop",
+    phone: "(11) 98333-4455",
+    cpf: "456.789.012-34",
+    subtitle: "Cuidadora Geriátrica (Disponível para novos atendimentos)"
+  },
+  {
+    id: "admin-1",
+    name: "Administrador LongeVita",
+    email: "admin@longevita.com.br",
+    role: "admin",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop",
+    phone: "(11) 3000-0000",
+    cpf: "000.000.000-00",
+    subtitle: "Governança Master & Auditoria Executiva"
+  }
+];
 
 const INITIAL_CAREGIVERS: Caregiver[] = [
   {
@@ -356,7 +461,7 @@ const INITIAL_ASSISTIDOS: Assistido[] = [
       { nome: "Metformina 850mg", horario: "12:00" }
     ],
     rotinas: ["Fisioterapia motora", "Banho assistido com cadeira higiênica", "Exercícios de deglutição"],
-    contatoEmergencia: { nome: "Carlos Eduardo Silveira (Neto)", parentesco: "Neto", telefone: "(11) 97654-3210" },
+    contatoEmergencia: { nome: "Roberto Silveira (Neto)", parentesco: "Neto", telefone: "(11) 97654-3210" },
     frequenciaPretendida: "Plantão 12h Diurno",
     orcamentoHora: 38,
     status: "em_negociacao",
@@ -502,6 +607,8 @@ const INITIAL_NOTIFICATIONS: AppNotification[] = [
   }
 ];
 
+const STORAGE_KEY_USERS = "longevita_v3_users";
+const STORAGE_KEY_CURRENT_USER = "longevita_v3_current_user";
 const STORAGE_KEY_CAREGIVERS = "longevita_v3_caregivers";
 const STORAGE_KEY_ASSISTIDOS = "longevita_v3_assistidos";
 const STORAGE_KEY_CONTRACTS = "longevita_v3_contracts";
@@ -511,47 +618,205 @@ const STORAGE_KEY_ROLE = "longevita_v3_role";
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { success, info, error: toastError } = useToast();
 
-  const [userRole, setUserRoleState] = useState<"family" | "caregiver" | "admin">("family");
-  const [caregivers, setCaregivers] = useState<Caregiver[]>(INITIAL_CAREGIVERS);
-  const [assistidos, setAssistidos] = useState<Assistido[]>(INITIAL_ASSISTIDOS);
-  const [contracts, setContracts] = useState<Contract[]>(INITIAL_CONTRACTS);
-  const [notifications, setNotifications] = useState<AppNotification[]>(INITIAL_NOTIFICATIONS);
+  // Inicialização resiliente e síncrona a partir do LocalStorage (evita piscar Mariana Albuquerque)
+  const [users, setUsers] = useState<UserProfile[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_USERS);
+        if (saved) {
+          const stored = JSON.parse(saved);
+          if (Array.isArray(stored) && stored.length > 0) {
+            const map = new Map();
+            INITIAL_USERS.forEach((u) => map.set(u.id, u));
+            stored.forEach((u: UserProfile) => {
+              if (u && u.id) map.set(u.id, u);
+            });
+            return Array.from(map.values());
+          }
+        }
+      } catch (e) {}
+    }
+    return INITIAL_USERS;
+  });
+
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedCurrent = localStorage.getItem(STORAGE_KEY_CURRENT_USER);
+        if (savedCurrent) {
+          const parsed = JSON.parse(savedCurrent);
+          if (parsed && parsed.id && parsed.name) return parsed;
+        }
+      } catch (e) {}
+    }
+    return INITIAL_USERS[0];
+  });
+
+  const [userRole, setUserRoleState] = useState<"family" | "caregiver" | "admin">(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const savedCurrent = localStorage.getItem(STORAGE_KEY_CURRENT_USER);
+        if (savedCurrent) {
+          const parsed = JSON.parse(savedCurrent);
+          if (parsed && parsed.role) return parsed.role;
+        }
+        const savedRole = localStorage.getItem(STORAGE_KEY_ROLE);
+        if (savedRole && ["family", "caregiver", "admin"].includes(savedRole)) {
+          return savedRole as any;
+        }
+      } catch (e) {}
+    }
+    return "family";
+  });
+
+  const [caregivers, setCaregivers] = useState<Caregiver[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_CAREGIVERS);
+        if (saved) {
+          const stored = JSON.parse(saved);
+          if (Array.isArray(stored) && stored.length > 0) {
+            const cgMap = new Map();
+            INITIAL_CAREGIVERS.forEach((c) => cgMap.set(c.id, c));
+            stored.forEach((c: Caregiver) => {
+              if (c && c.id) cgMap.set(c.id, c);
+            });
+            return Array.from(cgMap.values());
+          }
+        }
+      } catch (e) {}
+    }
+    return INITIAL_CAREGIVERS;
+  });
+
+  const [assistidos, setAssistidos] = useState<Assistido[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_ASSISTIDOS);
+        if (saved) {
+          const stored = JSON.parse(saved);
+          if (Array.isArray(stored) && stored.length > 0) {
+            const astMap = new Map();
+            INITIAL_ASSISTIDOS.forEach((a) => astMap.set(a.id, a));
+            stored.forEach((a: Assistido) => {
+              if (a && a.id) astMap.set(a.id, a);
+            });
+            return Array.from(astMap.values());
+          }
+        }
+      } catch (e) {}
+    }
+    return INITIAL_ASSISTIDOS;
+  });
+
+  const [contracts, setContracts] = useState<Contract[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_CONTRACTS);
+        if (saved) {
+          const stored = JSON.parse(saved);
+          if (Array.isArray(stored) && stored.length > 0) {
+            const cMap = new Map();
+            INITIAL_CONTRACTS.forEach((c) => cMap.set(c.id, c));
+            stored.forEach((c: Contract) => {
+              if (c && c.id) cMap.set(c.id, c);
+            });
+            return Array.from(cMap.values());
+          }
+        }
+      } catch (e) {}
+    }
+    return INITIAL_CONTRACTS;
+  });
+
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY_NOTIFICATIONS);
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return INITIAL_NOTIFICATIONS;
+  });
+
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Hidratação a partir do LocalStorage no cliente
+  // Hidratação e fusão com o LocalStorage no cliente
   useEffect(() => {
     try {
-      const savedRole = localStorage.getItem(STORAGE_KEY_ROLE);
-      if (savedRole && ["family", "caregiver", "admin"].includes(savedRole)) {
-        setUserRoleState(savedRole as any);
+      const savedUsers = localStorage.getItem(STORAGE_KEY_USERS);
+      if (savedUsers) {
+        const stored = JSON.parse(savedUsers);
+        if (Array.isArray(stored)) {
+          const map = new Map();
+          INITIAL_USERS.forEach((u) => map.set(u.id, u));
+          stored.forEach((u: UserProfile) => {
+            if (u && u.id) map.set(u.id, u);
+          });
+          setUsers(Array.from(map.values()));
+        }
       }
+
+      const savedCurrentUser = localStorage.getItem(STORAGE_KEY_CURRENT_USER);
+      if (savedCurrentUser) {
+        const parsedCurrent = JSON.parse(savedCurrentUser);
+        if (parsedCurrent && parsedCurrent.id && parsedCurrent.name) {
+          setCurrentUser(parsedCurrent);
+          setUserRoleState(parsedCurrent.role || "family");
+        }
+      }
+
       const savedCaregivers = localStorage.getItem(STORAGE_KEY_CAREGIVERS);
       if (savedCaregivers) {
-        setCaregivers(JSON.parse(savedCaregivers));
+        const storedCgs = JSON.parse(savedCaregivers);
+        if (Array.isArray(storedCgs)) {
+          const cgMap = new Map();
+          INITIAL_CAREGIVERS.forEach((c) => cgMap.set(c.id, c));
+          storedCgs.forEach((c: Caregiver) => {
+            if (c && c.id) cgMap.set(c.id, c);
+          });
+          setCaregivers(Array.from(cgMap.values()));
+        }
       }
+
       const savedAssistidos = localStorage.getItem(STORAGE_KEY_ASSISTIDOS);
       if (savedAssistidos) {
-        setAssistidos(JSON.parse(savedAssistidos));
+        const storedAst = JSON.parse(savedAssistidos);
+        if (Array.isArray(storedAst)) {
+          const astMap = new Map();
+          INITIAL_ASSISTIDOS.forEach((a) => astMap.set(a.id, a));
+          storedAst.forEach((a: Assistido) => {
+            if (a && a.id) astMap.set(a.id, a);
+          });
+          setAssistidos(Array.from(astMap.values()));
+        }
       }
+
       const savedContracts = localStorage.getItem(STORAGE_KEY_CONTRACTS);
       if (savedContracts) {
-        setContracts(JSON.parse(savedContracts));
-      }
-      const savedNotifs = localStorage.getItem(STORAGE_KEY_NOTIFICATIONS);
-      if (savedNotifs) {
-        setNotifications(JSON.parse(savedNotifs));
+        const storedContracts = JSON.parse(savedContracts);
+        if (Array.isArray(storedContracts)) {
+          const cMap = new Map();
+          INITIAL_CONTRACTS.forEach((c) => cMap.set(c.id, c));
+          storedContracts.forEach((c: Contract) => {
+            if (c && c.id) cMap.set(c.id, c);
+          });
+          setContracts(Array.from(cMap.values()));
+        }
       }
     } catch (err) {
-      console.warn("Falha ao recuperar dados do localStorage:", err);
+      console.warn("Falha ao sincronizar dados do localStorage:", err);
     } finally {
       setIsHydrated(true);
     }
   }, []);
 
-  // Persistência automática
+  // Persistência automática contínua
   useEffect(() => {
     if (!isHydrated) return;
     try {
+      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentUser));
       localStorage.setItem(STORAGE_KEY_ROLE, userRole);
       localStorage.setItem(STORAGE_KEY_CAREGIVERS, JSON.stringify(caregivers));
       localStorage.setItem(STORAGE_KEY_ASSISTIDOS, JSON.stringify(assistidos));
@@ -560,10 +825,331 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.warn("Falha ao salvar no localStorage:", err);
     }
-  }, [userRole, caregivers, assistidos, contracts, notifications, isHydrated]);
+  }, [users, currentUser, userRole, caregivers, assistidos, contracts, notifications, isHydrated]);
 
+  // Alterar papel diretamente
   const setUserRole = (role: "family" | "caregiver" | "admin") => {
     setUserRoleState(role);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY_ROLE, role);
+    }
+    if (currentUser.role !== role) {
+      const match = users.find((u) => u.role === role);
+      if (match) {
+        setCurrentUser(match);
+        if (typeof window !== "undefined") {
+          localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(match));
+        }
+      }
+    }
+  };
+
+  // Alternar para uma conta específica
+  const switchUser = (userId: string) => {
+    const found = users.find((u) => u.id === userId);
+    if (found) {
+      setCurrentUser(found);
+      setUserRoleState(found.role);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(found));
+        localStorage.setItem(STORAGE_KEY_ROLE, found.role);
+      }
+      success(
+        "Perfil Carregado",
+        `Conectado como ${found.name} (${found.role === "family" ? "Família" : found.role === "caregiver" ? "Cuidador" : "ADM"}).`
+      );
+    }
+  };
+
+  // Login inteligente por e-mail, CPF, Nome ou ID
+  const loginUser = (
+    userIdOrEmail: string,
+    preferredRole?: "family" | "caregiver" | "admin"
+  ): boolean => {
+    const clean = userIdOrEmail.trim().toLowerCase();
+
+    // 1. Busca direta em users
+    let found = users.find(
+      (u) =>
+        u.id.toLowerCase() === clean ||
+        u.email.toLowerCase() === clean ||
+        u.name.toLowerCase() === clean ||
+        (u.cpf && u.cpf.replace(/\D/g, "") === clean.replace(/\D/g, ""))
+    );
+
+    // 2. Se não achou em users, verifica se existe em caregivers cadastrados
+    if (!found) {
+      const matchingCg = caregivers.find(
+        (c) =>
+          c.nome.toLowerCase() === clean ||
+          c.id.toLowerCase() === clean ||
+          (c as any).email?.toLowerCase() === clean
+      );
+      if (matchingCg) {
+        found = {
+          id: matchingCg.id,
+          name: matchingCg.nome,
+          email: `${matchingCg.id}@longevita.com.br`,
+          role: "caregiver",
+          caregiverId: matchingCg.id,
+          avatar: matchingCg.foto,
+          subtitle: `Cuidador Credenciado (${matchingCg.especialidade})`
+        };
+        setUsers((prev) => [found!, ...prev.filter((u) => u.id !== found!.id)]);
+      }
+    }
+
+    // 3. Reconhecimento de Admin
+    if (!found && clean.includes("admin")) {
+      found = users.find((u) => u.role === "admin") || INITIAL_USERS[5];
+    }
+
+    // 4. Se é um e-mail novo digitado que ainda não foi mapeado:
+    if (!found && clean.includes("@")) {
+      const roleToUse = preferredRole || "caregiver";
+      const inferredName = clean
+        .split("@")[0]
+        .replace(/[._-]/g, " ")
+        .replace(/\b\w/g, (l) => l.toUpperCase());
+      const newId = roleToUse === "caregiver" ? `cg-${Date.now()}` : `fam-${Date.now()}`;
+
+      found = {
+        id: newId,
+        name: inferredName,
+        email: clean,
+        role: roleToUse,
+        caregiverId: roleToUse === "caregiver" ? newId : undefined,
+        familyId: roleToUse === "family" ? newId : undefined,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(inferredName)}`,
+        subtitle: roleToUse === "caregiver" ? "Cuidador Profissional" : "Família Contratante"
+      };
+
+      if (roleToUse === "caregiver") {
+        const newCg: Caregiver = {
+          id: newId,
+          nome: inferredName,
+          initials: inferredName.slice(0, 2).toUpperCase(),
+          especialidade: "Cuidado Humanizado & Gerontologia",
+          experiencia: "5 anos de experiência",
+          avaliacao: 5.0,
+          avaliacoesQtd: 1,
+          valorHora: 45,
+          foto: found.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(inferredName)}`,
+          biografia: "Profissional cadastrado na plataforma LongeVita.",
+          antecedentesChecados: true,
+          formacaoVerificada: true,
+          statusAprovacao: "aprovado",
+          disponibilidade: "Plantões Diurnos e Noturnos",
+          disponivel: true,
+          vinculosAtivosCount: 0,
+          habilidades: ["Cuidado Geriátrico", "Primeiros Socorros", "Apoio à Mobilidade"],
+          reviews: []
+        };
+        setCaregivers((prev) => [newCg, ...prev]);
+        if (typeof window !== "undefined") {
+          try {
+            const rawCgs = localStorage.getItem(STORAGE_KEY_CAREGIVERS);
+            const currentCgs = rawCgs ? JSON.parse(rawCgs) : INITIAL_CAREGIVERS;
+            localStorage.setItem(
+              STORAGE_KEY_CAREGIVERS,
+              JSON.stringify([newCg, ...currentCgs.filter((c: any) => c.id !== newId)])
+            );
+          } catch (e) {}
+        }
+      }
+
+      setUsers((prev) => [found!, ...prev]);
+      if (typeof window !== "undefined") {
+        try {
+          const rawUsers = localStorage.getItem(STORAGE_KEY_USERS);
+          const currentUsers = rawUsers ? JSON.parse(rawUsers) : INITIAL_USERS;
+          localStorage.setItem(
+            STORAGE_KEY_USERS,
+            JSON.stringify([found, ...currentUsers.filter((u: any) => u.id !== newId)])
+          );
+        } catch (e) {}
+      }
+    }
+
+    if (found) {
+      setCurrentUser(found);
+      setUserRoleState(found.role);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(found));
+        localStorage.setItem(STORAGE_KEY_ROLE, found.role);
+      }
+      success(
+        "Bem-vindo(a)!",
+        `Acesso autenticado como ${found.name} (${found.role === "caregiver" ? "Cuidador" : found.role === "family" ? "Família" : "ADM"}).`
+      );
+      return true;
+    }
+
+    return false;
+  };
+
+  // Registro de nova Família / Contratante com persistência imediata
+  const registerFamilyUser = (data: {
+    name: string;
+    email: string;
+    phone?: string;
+    cpf?: string;
+    address?: { street?: string; city?: string; state?: string; neighborhood?: string };
+  }): UserProfile => {
+    const newId = `fam-${Date.now()}`;
+    const lastName = data.name.trim().split(" ").slice(-1)[0] || data.name;
+
+    const newUser: UserProfile = {
+      id: newId,
+      name: data.name,
+      email: data.email,
+      role: "family",
+      familyId: newId,
+      phone: data.phone || "(11) 99999-0000",
+      cpf: data.cpf,
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.name)}`,
+      subtitle: `Família ${lastName} (Nova Conta)`
+    };
+
+    setUsers((prev) => [newUser, ...prev.filter((u) => u.id !== newId)]);
+    setCurrentUser(newUser);
+    setUserRoleState("family");
+
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(newUser));
+        localStorage.setItem(STORAGE_KEY_ROLE, "family");
+
+        const rawUsers = localStorage.getItem(STORAGE_KEY_USERS);
+        const curUsers = rawUsers ? JSON.parse(rawUsers) : INITIAL_USERS;
+        localStorage.setItem(
+          STORAGE_KEY_USERS,
+          JSON.stringify([newUser, ...curUsers.filter((u: any) => u.id !== newId)])
+        );
+      } catch (err) {
+        console.warn("Erro ao gravar nova família no localStorage:", err);
+      }
+    }
+
+    success("Cadastro de Família Criado!", `Bem-vindo(a), ${data.name}!`);
+    return newUser;
+  };
+
+  // Registro de novo Cuidador com persistência imediata e inclusão na vitrine de cuidadores
+  const registerCaregiverUser = (data: {
+    name: string;
+    email: string;
+    phone?: string;
+    cpf?: string;
+    especialidade?: string;
+    experienciaAnos?: string | number;
+    valorHora?: number;
+    formacao?: string;
+    disponibilidade?: string;
+  }): { user: UserProfile; caregiver: Caregiver } => {
+    const newId = `cg-${Date.now()}`;
+    const names = data.name.trim().split(" ");
+    const initials =
+      names.length > 1
+        ? (names[0][0] + names[names.length - 1][0]).toUpperCase()
+        : data.name.slice(0, 2).toUpperCase();
+
+    const foto = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.name)}`;
+
+    const newCaregiver: Caregiver = {
+      id: newId,
+      nome: data.name,
+      initials,
+      especialidade: data.especialidade || "Cuidado Humanizado & Apoio à Mobilidade",
+      experiencia: `${data.experienciaAnos || 3} anos de experiência`,
+      avaliacao: 5.0,
+      avaliacoesQtd: 1,
+      valorHora: Number(data.valorHora) || 45,
+      foto,
+      biografia: data.formacao || "Profissional dedicado ao cuidado e assistência de idosos com rigor técnico.",
+      antecedentesChecados: true,
+      formacaoVerificada: true,
+      statusAprovacao: "aprovado",
+      disponibilidade: data.disponibilidade || "Plantões Diurnos e Noturnos",
+      disponivel: true,
+      vinculosAtivosCount: 0,
+      habilidades: data.especialidade
+        ? [data.especialidade, "Cuidado Humanizado", "Primeiros Socorros"]
+        : ["Cuidado Geriátrico", "Primeiros Socorros"],
+      reviews: [
+        {
+          id: `rev-${Date.now()}`,
+          caregiverId: newId,
+          authorName: "Auditoria LongeVita",
+          authorRelation: "Credenciamento Oficial",
+          date: "Hoje",
+          rating: 5,
+          comment: "Cadastro homologado e aprovado para atendimento domiciliar.",
+          tags: ["Credenciamento Oficial", "Verificação Aprovada"]
+        }
+      ]
+    };
+
+    const newUser: UserProfile = {
+      id: newId,
+      name: data.name,
+      email: data.email,
+      role: "caregiver",
+      caregiverId: newId,
+      phone: data.phone || "(11) 99999-0000",
+      cpf: data.cpf,
+      avatar: foto,
+      subtitle: `Cuidador Credenciado (${data.especialidade || "Geral"})`
+    };
+
+    // Atualiza o estado React
+    setCaregivers((prev) => [newCaregiver, ...prev.filter((c) => c.id !== newId)]);
+    setUsers((prev) => [newUser, ...prev.filter((u) => u.id !== newId)]);
+    setCurrentUser(newUser);
+    setUserRoleState("caregiver");
+
+    // Grava imediatamente no LocalStorage (síncrono)
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(newUser));
+        localStorage.setItem(STORAGE_KEY_ROLE, "caregiver");
+
+        const rawCgs = localStorage.getItem(STORAGE_KEY_CAREGIVERS);
+        const curCgs = rawCgs ? JSON.parse(rawCgs) : INITIAL_CAREGIVERS;
+        localStorage.setItem(
+          STORAGE_KEY_CAREGIVERS,
+          JSON.stringify([newCaregiver, ...curCgs.filter((c: any) => c.id !== newId)])
+        );
+
+        const rawUsers = localStorage.getItem(STORAGE_KEY_USERS);
+        const curUsers = rawUsers ? JSON.parse(rawUsers) : INITIAL_USERS;
+        localStorage.setItem(
+          STORAGE_KEY_USERS,
+          JSON.stringify([newUser, ...curUsers.filter((u: any) => u.id !== newId)])
+        );
+      } catch (err) {
+        console.warn("Erro ao gravar novo cuidador no localStorage:", err);
+      }
+    }
+
+    success(
+      "Perfil de Cuidador Criado!",
+      `${data.name}, seu perfil está cadastrado, ativo e disponível para contratação!`
+    );
+
+    return { user: newUser, caregiver: newCaregiver };
+  };
+
+  // Logout
+  const logoutUser = () => {
+    const defaultUser = INITIAL_USERS[0];
+    setCurrentUser(defaultUser);
+    setUserRoleState("family");
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(defaultUser));
+      localStorage.setItem(STORAGE_KEY_ROLE, "family");
+    }
+    info("Sessão Encerrada", "Você saiu da sua conta.");
   };
 
   // Contador de não lidas para o papel ativo
@@ -593,8 +1179,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       caregiverId: data.caregiverId,
       caregiverName: data.caregiverName,
       caregiverFoto: targetCaregiver?.foto,
-      familyId: "fam-1",
-      familyName: "Família Albuquerque Castro",
+      familyId: currentUser.familyId || currentUser.id,
+      familyName: currentUser.subtitle ? currentUser.name : `Família ${currentUser.name}`,
       assistidoId: targetAssistidoId,
       patientName: data.patientName,
       patientAge: data.patientAge,
@@ -643,7 +1229,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     success("Proposta de Vínculo Enviada", `O profissional ${data.caregiverName} recebeu a notificação com os termos contratuais.`);
   };
 
-  // 2. Cuidador Aceita o Vínculo (Reatividade Imediata: Família sai da vitrine pública de oportunidades)
+  // 2. Cuidador Aceita o Vínculo
   const acceptContract = (contractId: string) => {
     const targetContract = contracts.find((c) => c.id === contractId);
     if (!targetContract) return;
@@ -653,7 +1239,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       prev.map((c) => (c.id === contractId ? { ...c, status: "ativo" } : c))
     );
 
-    // Marca o assistido/família como "vinculada" -> DESAPARECE AUTOMATICAMENTE DAS OPORTUNIDADES
+    // Marca o assistido/família como "vinculada"
     setAssistidos((prev) =>
       prev.map((a) => {
         if (a.id === targetContract.assistidoId || a.nome === targetContract.patientName) {
@@ -677,7 +1263,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return {
             ...cg,
             vinculosAtivosCount: newCount,
-            disponivel: newCount < 2 // Ex: se atingir capacidade máxima
+            disponivel: newCount < 2
           };
         }
         return cg;
@@ -743,7 +1329,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     info("Proposta Recusada", "A família foi informada da indisponibilidade na agenda.");
   };
 
-  // 4. Encerrar / Desfazer Vínculo (Single Source of Truth: Família e Cuidador retornam à vitrine pública de disponíveis)
+  // 4. Encerrar / Desfazer Vínculo
   const terminateContract = (contractId: string, reason?: string) => {
     const targetContract = contracts.find((c) => c.id === contractId);
     if (!targetContract) return;
@@ -757,7 +1343,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       )
     );
 
-    // 2. Restaura o assistido/família para status "disponivel" (VOLTA À VITRINE PÚBLICA COM ANIMAÇÃO)
+    // 2. Restaura o assistido/família para status "disponivel"
     setAssistidos((prev) =>
       prev.map((a) => {
         if (a.id === targetContract.assistidoId || a.nome === targetContract.patientName) {
@@ -930,7 +1516,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   // 8. Cadastro de Novo Cuidador
-  const addCaregiver = (newCg: Omit<Caregiver, "id" | "reviews">) => {
+  const addCaregiver = (newCg: Omit<Caregiver, "id" | "reviews">): Caregiver => {
     const names = newCg.nome.trim().split(" ");
     const initials =
       names.length > 1
@@ -960,6 +1546,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     setCaregivers((prev) => [created, ...prev]);
     success("Profissional Cadastrado", `${created.nome} foi adicionado(a) e está visível na plataforma.`);
+    return created;
   };
 
   // 9. Envio de Feedback e Avaliação
@@ -1010,13 +1597,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   // 11. Cadastro de Novo Assistido
-  const addAssistido = (newAst: Omit<Assistido, "id">) => {
+  const addAssistido = (newAst: Omit<Assistido, "id">): Assistido => {
     const created: Assistido = {
       ...newAst,
       id: `ast-${Date.now()}`
     };
     setAssistidos((prev) => [created, ...prev]);
     success("Assistido Cadastrado", `${created.nome} foi cadastrado(a) e está disponível na plataforma.`);
+    return created;
   };
 
   // 12. Aprovação Administrativa de Cuidador
@@ -1057,13 +1645,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
   };
 
-  // Resetar para dados padrão caso necessário
+  // Resetar para dados padrão
   const resetToDefaultData = () => {
+    setUsers(INITIAL_USERS);
+    setCurrentUser(INITIAL_USERS[0]);
+    setUserRoleState("family");
     setCaregivers(INITIAL_CAREGIVERS);
     setAssistidos(INITIAL_ASSISTIDOS);
     setContracts(INITIAL_CONTRACTS);
     setNotifications(INITIAL_NOTIFICATIONS);
-    setUserRoleState("family");
     localStorage.clear();
     info("Dados Restaurados", "O ecossistema foi restaurado para os dados iniciais padrão.");
   };
@@ -1071,8 +1661,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider
       value={{
+        currentUser,
+        users,
         userRole,
         setUserRole,
+        loginUser,
+        registerFamilyUser,
+        registerCaregiverUser,
+        switchUser,
+        logoutUser,
         caregivers,
         contracts,
         assistidos,

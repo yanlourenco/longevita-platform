@@ -31,10 +31,12 @@ import Logo from "@/components/Logo";
 import { useToast } from "@/components/ToastProvider";
 import { maskCPF, maskPhone, maskCEP, fetchViaCEP, calculatePasswordStrength } from "@/lib/utils/masks";
 import { createClient } from "@/lib/supabase/client";
+import { useApp } from "@/context/AppContext";
 
 export default function CadastroContratantePage() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
+  const { registerFamilyUser } = useApp();
   const supabase = createClient();
 
   const [step, setStep] = useState(1);
@@ -169,44 +171,46 @@ export default function CadastroContratantePage() {
     setIsLoading(true);
     try {
       // Criação de conta no Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
-        password: formData.password,
-        options: {
-          data: {
-            role: "contractor",
-            full_name: formData.fullName,
-            cpf: formData.cpf,
-            rg: formData.rg,
-            phone: formData.phone,
-            relationship_to_senior: formData.relationshipToSenior,
-            address: {
-              cep: formData.cep,
-              street: formData.street,
-              number: formData.number,
-              complement: formData.complement,
-              neighborhood: formData.neighborhood,
-              city: formData.city,
-              state: formData.state,
-              residence_type: formData.residenceType,
-            },
-            care_preferences: {
-              care_type: formData.careType,
-              frequency: formData.frequency,
-              urgency: formData.urgency,
+      try {
+        await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              role: "contractor",
+              full_name: formData.fullName,
+              cpf: formData.cpf,
+              phone: formData.phone,
             },
           },
-        },
-      });
-
-      if (error) {
-        console.warn("Supabase SignUp Notice:", error.message);
+        });
+      } catch (authErr) {
+        console.warn("Supabase Auth local notice:", authErr);
       }
 
-      success("Cadastro Concluído!", "Sua conta de contratante LongeVita foi criada com sucesso.");
+      // Registra a nova Família/Contratante no ecossistema reativo
+      registerFamilyUser({
+        name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        cpf: formData.cpf,
+        address: {
+          street: `${formData.street}, ${formData.number}`,
+          neighborhood: formData.neighborhood,
+          city: formData.city,
+          state: formData.state
+        }
+      });
+
+      // Salva dados no sessionStorage de suporte caso precise no step do assistido
+      sessionStorage.setItem("longevita_temp_family_address", `${formData.street}, ${formData.number} - ${formData.neighborhood}, ${formData.city}`);
+      sessionStorage.setItem("longevita_temp_family_phone", formData.phone);
+      sessionStorage.setItem("longevita_temp_family_rel", formData.relationshipToSenior);
+
+      success("Cadastro Concluído!", "Sua conta de contratante LongeVita foi criada. Vamos cadastrar seu familiar assistido!");
       setTimeout(() => {
         router.push("/assistido/novo");
-      }, 1200);
+      }, 1000);
     } catch (err: any) {
       console.error(err);
       toastError("Erro ao finalizar", "Tente novamente em instantes.");

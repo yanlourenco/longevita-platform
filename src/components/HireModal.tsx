@@ -13,15 +13,29 @@ interface HireModalProps {
 }
 
 export default function HireModal({ caregiver, isOpen, onClose, onSuccessAnimation }: HireModalProps) {
-  const { sendContractProposal, assistidos } = useApp();
+  const { sendContractProposal, assistidos, currentUser } = useApp();
 
-  const [selectedAssistidoId, setSelectedAssistidoId] = useState<string>("ast-1");
-  const [patientName, setPatientName] = useState("Dona Helena Ribeiro de Castro");
-  const [patientAge, setPatientAge] = useState("78");
-  const [patientAddress, setPatientAddress] = useState("Rua Oscar Freire, 1420 - Jardins, São Paulo");
+  // Assistidos desta família específica
+  const myFamilyAssistidos = assistidos.filter(
+    (a) => a.familyId === currentUser.id || a.familyId === currentUser.familyId
+  );
+  const availableOptions = myFamilyAssistidos.length > 0 ? myFamilyAssistidos : assistidos;
+
+  const [selectedAssistidoId, setSelectedAssistidoId] = useState<string>(
+    availableOptions[0]?.id || "custom"
+  );
+  const [patientName, setPatientName] = useState(availableOptions[0]?.nome || "Dona Helena Ribeiro");
+  const [patientAge, setPatientAge] = useState(String(availableOptions[0]?.idade || "78"));
+  const [patientAddress, setPatientAddress] = useState(availableOptions[0]?.endereco || "São Paulo, SP");
   const [frequency, setFrequency] = useState("Plantão 12h (Diurno)");
-  const [careNeeds, setCareNeeds] = useState("Acompanhamento de rotina, aferição de pressão 2x/dia e auxílio com alimentação.");
+  const [careNeeds, setCareNeeds] = useState(availableOptions[0]?.necessidades || "Acompanhamento de rotina, aferição de sinais vitais e auxílio nas atividades diárias.");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (availableOptions.length > 0 && selectedAssistidoId === "custom" && !patientName) {
+      setSelectedAssistidoId(availableOptions[0].id);
+    }
+  }, [availableOptions]);
 
   useEffect(() => {
     if (selectedAssistidoId && selectedAssistidoId !== "custom") {
@@ -100,7 +114,7 @@ export default function HireModal({ caregiver, isOpen, onClose, onSuccessAnimati
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
-            {assistidos.length > 0 && (
+            {availableOptions.length > 0 && (
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-neutral-900 mb-1">
                   Selecionar Familiar Cadastrado
@@ -110,7 +124,7 @@ export default function HireModal({ caregiver, isOpen, onClose, onSuccessAnimati
                   onChange={(e) => setSelectedAssistidoId(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-neutral-50 border border-neutral-300 text-xs text-neutral-900 font-bold outline-none focus:border-[#72b63f]"
                 >
-                  {assistidos.map((ast) => (
+                  {availableOptions.map((ast) => (
                     <option key={ast.id} value={ast.id}>
                       {ast.nome} ({ast.idade} anos - {ast.bairro || "São Paulo"})
                     </option>

@@ -37,12 +37,14 @@ import {
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import NotificationCenter from "@/components/NotificationCenter";
+import AccountSwitcherModal from "@/components/AccountSwitcherModal";
 import { useApp } from "@/context/AppContext";
 
 export default function AdminPage() {
   const {
     userRole,
     setUserRole,
+    currentUser,
     caregivers,
     contracts,
     assistidos,
@@ -55,6 +57,7 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"visao_geral" | "cuidadores" | "contratos" | "assistidos" | "auditoria">("visao_geral");
   const [searchTerm, setSearchTerm] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountSwitcherOpen, setAccountSwitcherOpen] = useState(false);
 
   // Métricas executivas
   const totalCaregivers = caregivers.length;
@@ -124,6 +127,15 @@ export default function AdminPage() {
                 Cuidador
               </Link>
             </div>
+
+            {/* Botão de Trocar Perfil / Entrar como outro Usuário */}
+            <button
+              onClick={() => setAccountSwitcherOpen(true)}
+              className="w-full mb-4 py-2 px-3 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 border border-neutral-200 shadow-2xs hover:border-[#02a9b5]"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#02a9b5]" />
+              Alternar / Simular Outro Usuário
+            </button>
 
             {/* Menu Vertical de Módulos ADM */}
             <div className="space-y-1">
@@ -731,6 +743,11 @@ export default function AdminPage() {
           )}
         </main>
       </div>
+
+      <AccountSwitcherModal
+        isOpen={accountSwitcherOpen}
+        onClose={() => setAccountSwitcherOpen(false)}
+      />
     </div>
   );
 }

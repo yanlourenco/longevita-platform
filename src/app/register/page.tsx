@@ -24,10 +24,12 @@ import Logo from "@/components/Logo";
 import { useToast } from "@/components/ToastProvider";
 import { maskCPF, maskPhone, maskCEP, fetchViaCEP, calculatePasswordStrength } from "@/lib/utils/masks";
 import { createClient } from "@/lib/supabase/client";
+import { useApp } from "@/context/AppContext";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
+  const { registerFamilyUser } = useApp();
   const supabase = createClient();
 
   const [formData, setFormData] = useState({
@@ -145,16 +147,22 @@ export default function RegisterPage() {
         },
       });
 
-      if (error) {
-        console.warn("Supabase SignUp Notice:", error.message);
-        // Fallback de demonstração amigável
-        success("Cadastro Realizado!", "Conta criada com sucesso no ecossistema LongeVita.");
-        setTimeout(() => router.push("/assistido/novo"), 1200);
-        return;
-      }
+      // Registra a nova Família/Contratante no ecossistema reativo
+      registerFamilyUser({
+        name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        cpf: formData.cpf,
+        address: {
+          street: `${formData.street}, ${formData.number}`,
+          neighborhood: formData.neighborhood,
+          city: formData.city,
+          state: formData.state
+        }
+      });
 
       success("Conta Criada com Sucesso!", "Agora vamos cadastrar o perfil do seu familiar.");
-      router.push("/assistido/novo");
+      setTimeout(() => router.push("/assistido/novo"), 600);
     } catch (err: any) {
       console.error(err);
       toastError("Erro no cadastro", "Tente novamente ou verifique os dados.");

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -26,10 +26,17 @@ export default function ApplyOpportunityModal({
   isOpen,
   onClose
 }: ApplyOpportunityModalProps) {
-  const { applyToOpportunity, caregivers } = useApp();
-  const [selectedCaregiverId, setSelectedCaregiverId] = useState("cg-2"); // Default Carlos Eduardo
+  const { applyToOpportunity, caregivers, currentUser } = useApp();
+  const defaultCgId = currentUser.role === "caregiver" ? (currentUser.caregiverId || currentUser.id) : "cg-2";
+  const [selectedCaregiverId, setSelectedCaregiverId] = useState(defaultCgId);
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (currentUser.role === "caregiver") {
+      setSelectedCaregiverId(currentUser.caregiverId || currentUser.id);
+    }
+  }, [currentUser]);
 
   if (!isOpen || !assistido) return null;
 

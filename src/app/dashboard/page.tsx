@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -56,19 +56,23 @@ import AddCaregiverModal from "@/components/AddCaregiverModal";
 import MedicalFileModal from "@/components/MedicalFileModal";
 import TerminateContractModal from "@/components/TerminateContractModal";
 import ApplyOpportunityModal from "@/components/ApplyOpportunityModal";
+import AccountSwitcherModal from "@/components/AccountSwitcherModal";
 import { useApp, Caregiver, Contract, Assistido } from "@/context/AppContext";
 
 export default function DashboardPage() {
   const {
     userRole,
     setUserRole,
+    currentUser,
+    users,
     caregivers,
     contracts,
     assistidos,
     startShift,
     endShift,
     acceptContract,
-    rejectContract
+    rejectContract,
+    logoutUser
   } = useApp();
 
   // Abas de navegação
@@ -76,6 +80,7 @@ export default function DashboardPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Modais
+  const [accountSwitcherOpen, setAccountSwitcherOpen] = useState(false);
   const [hireModalOpen, setHireModalOpen] = useState(false);
   const [targetHireCaregiver, setTargetHireCaregiver] = useState<Caregiver | null>(null);
 
@@ -100,28 +105,37 @@ export default function DashboardPage() {
   // Filtros de Cuidadores
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("all");
-  const [maxPrice, setMaxPrice] = useState<number>(60);
+  const [maxPrice, setMaxPrice] = useState<number>(120);
 
   // Filtros de Oportunidades de Famílias
   const [opportunitySearch, setOpportunitySearch] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("all");
+
+  // Sincronização automática do papel com a conta ativa
+  useEffect(() => {
+    if (currentUser?.role && currentUser.role !== userRole) {
+      setUserRole(currentUser.role);
+    }
+  }, [currentUser]);
 
   // Cuidadores Disponíveis (filtrados e reativos)
   const availableCaregivers = useMemo(() => {
     return caregivers.filter((c) => {
       // Regra de disponibilidade: se caregiver estiver ativo e disponível
       const isAvailable = c.disponivel !== false;
+      const cleanTerm = searchTerm.trim().toLowerCase();
       const matchText =
-        c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.especialidade.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.habilidades.some((h) => h.toLowerCase().includes(searchTerm.toLowerCase()));
+        !cleanTerm ||
+        c.nome.toLowerCase().includes(cleanTerm) ||
+        c.especialidade.toLowerCase().includes(cleanTerm) ||
+        (c.habilidades || []).some((h) => h.toLowerCase().includes(cleanTerm));
 
       const matchSpecialty =
         selectedSpecialty === "all" ||
         c.especialidade.toLowerCase().includes(selectedSpecialty.toLowerCase()) ||
-        c.habilidades.some((h) => h.toLowerCase().includes(selectedSpecialty.toLowerCase()));
+        (c.habilidades || []).some((h) => h.toLowerCase().includes(selectedSpecialty.toLowerCase()));
 
-      const matchPrice = c.valorHora <= maxPrice;
+      const matchPrice = Number(c.valorHora || 0) <= maxPrice;
 
       return isAvailable && matchText && matchSpecialty && matchPrice;
     });
@@ -146,20 +160,67 @@ export default function DashboardPage() {
     });
   }, [assistidos, opportunitySearch, selectedRegion]);
 
+  // Assistidos da Família Logada (Isolamento Estrito)
+  const familyAssistidos = useMemo(() => {
+    const directMatches = assistidos.filter(
+      (a) => a.familyId === currentUser.id || a.familyId === currentUser.familyId
+    );
+    if (directMatches.length > 0) return directMatches;
+
+    // Fallback padrão se for Mariana Albuquerque (fam-1)
+    if (currentUser.id === "fam-1" || currentUser.familyId === "fam-1") {
+      return assistidos.filter((a) => a.id === "ast-1");
+    }
+    // Fallback padrão se for Roberto Silveira (fam-2)
+    if (currentUser.id === "fam-2" || currentUser.familyId === "fam-2") {
+      return assistidos.filter((a) => a.id === "ast-2");
+    }
+
+    return [];
+  }, [assistidos, currentUser]);
+
   // Vínculos Ativos e Pendentes da Família Logada
   const familyContracts = useMemo(() => {
-    return contracts.filter((c) => c.status === "ativo" || c.status === "pendente");
-  }, [contracts]);
+    return contracts.filter((c) => {
+      const isMyFamily =
+        c.familyId === currentUser.id ||
+        c.familyId === currentUser.familyId ||
+        c.familyName.toLowerCase() === currentUser.name.toLowerCase() ||
+        familyAssistidos.some((a) => a.id === c.assistidoId || a.nome === c.patientName);
 
-  // Vínculos Ativos e Pendentes do Cuidador Conectado
+      return isMyFamily && (c.status === "ativo" || c.status === "pendente");
+    });
+  }, [contracts, currentUser, familyAssistidos]);
+
+  // Vínculos Ativos e Pendentes do Cuidador Conectado (Isolamento Estrito)
   const caregiverContracts = useMemo(() => {
-    return contracts.filter((c) => c.status === "ativo" || c.status === "pendente");
-  }, [contracts]);
+    const cgId = currentUser.caregiverId || currentUser.id;
+    return contracts.filter((c) => {
+      const isMyCaregiver =
+        c.caregiverId === cgId ||
+        c.caregiverName.toLowerCase() === currentUser.name.toLowerCase();
 
-  // Assistidos da Família Logada
-  const familyAssistidos = useMemo(() => {
-    return assistidos;
-  }, [assistidos]);
+      return isMyCaregiver && (c.status === "ativo" || c.status === "pendente");
+    });
+  }, [contracts, currentUser]);
+
+  // Propostas Relevantes para a Conta Conectada
+  const userProposals = useMemo(() => {
+    if (userRole === "caregiver") {
+      const cgId = currentUser.caregiverId || currentUser.id;
+      return contracts.filter(
+        (c) => c.caregiverId === cgId || c.caregiverName.toLowerCase() === currentUser.name.toLowerCase()
+      );
+    }
+    return contracts.filter((c) => {
+      return (
+        c.familyId === currentUser.id ||
+        c.familyId === currentUser.familyId ||
+        c.familyName.toLowerCase() === currentUser.name.toLowerCase() ||
+        familyAssistidos.some((a) => a.id === c.assistidoId || a.nome === c.patientName)
+      );
+    });
+  }, [contracts, userRole, currentUser, familyAssistidos]);
 
   // Disparo de Modal de Contratação com Animação de Saída
   const openHire = (cg: Caregiver) => {
@@ -407,28 +468,39 @@ export default function DashboardPage() {
         </div>
 
         {/* Rodapé do Sidebar */}
-        <div className="p-4 border-t border-neutral-200/80 bg-neutral-50/60 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-neutral-200 flex-shrink-0 flex items-center justify-center text-xs font-bold text-neutral-700">
-              {userRole === "family" ? "MA" : "AS"}
+        <div className="p-3.5 border-t border-neutral-200/80 bg-neutral-50/80 flex flex-col gap-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-9 h-9 rounded-xl overflow-hidden bg-neutral-200 flex-shrink-0 border border-neutral-300">
+                <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-xs font-bold text-neutral-900 block truncate">
+                  {currentUser.name}
+                </span>
+                <span className="text-[10px] text-neutral-500 block truncate font-medium">
+                  {currentUser.subtitle || (userRole === "family" ? "Família Contratante" : "Cuidador Profissional")}
+                </span>
+              </div>
             </div>
-            <div className="min-w-0">
-              <span className="text-xs font-bold text-neutral-900 block truncate">
-                {userRole === "family" ? "Mariana Albuquerque" : "Ana Silva"}
-              </span>
-              <span className="text-[11px] text-neutral-500 block truncate font-medium">
-                {userRole === "family" ? "Contratante Familiar" : "Enfermeira Padrão"}
-              </span>
-            </div>
+
+            <button
+              onClick={() => logoutUser()}
+              className="p-2 rounded-xl text-neutral-400 hover:text-rose-600 hover:bg-white border border-transparent hover:border-neutral-200 transition-all"
+              title="Desconectar"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
 
-          <Link
-            href="/"
-            className="p-2 rounded-xl text-neutral-400 hover:text-rose-600 hover:bg-white border border-transparent hover:border-neutral-200 transition-all"
-            title="Sair"
+          {/* Botão de Troca Rápida de Conta */}
+          <button
+            onClick={() => setAccountSwitcherOpen(true)}
+            className="w-full py-2 px-3 rounded-xl bg-white hover:bg-neutral-100 text-neutral-800 text-[11px] font-bold transition-all flex items-center justify-center gap-1.5 border border-neutral-200 shadow-2xs hover:border-[#02a9b5]"
           >
-            <LogOut className="w-4 h-4" />
-          </Link>
+            <Sparkles className="w-3.5 h-3.5 text-[#02a9b5]" />
+            Alternar / Trocar Perfil
+          </button>
         </div>
       </aside>
 
@@ -454,7 +526,19 @@ export default function DashboardPage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
+            {/* Botão de Troca Rápida no Topo */}
+            <button
+              onClick={() => setAccountSwitcherOpen(true)}
+              className="text-xs font-bold text-neutral-800 hover:text-neutral-950 bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 rounded-xl border border-neutral-200 transition-colors flex items-center gap-1.5 shadow-2xs"
+            >
+              <div className="w-4 h-4 rounded-full overflow-hidden bg-neutral-300">
+                <img src={currentUser.avatar} alt={currentUser.name} className="w-full h-full object-cover" />
+              </div>
+              <span className="hidden sm:inline">{currentUser.name.split(" ")[0]}</span>
+              <span className="text-[10px] text-neutral-400">▼</span>
+            </button>
+
             <NotificationCenter />
             <Link
               href="/admin"
@@ -508,21 +592,42 @@ export default function DashboardPage() {
               {userRole === "family" ? (
                 /* VISÃO DA FAMÍLIA */
                 <div className="space-y-6">
-                  {familyAssistidos.map((ast) => {
-                    const activeContract = contracts.find(
-                      (c) =>
-                        (c.assistidoId === ast.id || c.patientName === ast.nome) &&
-                        (c.status === "ativo" || c.status === "pendente")
-                    );
-                    const linkedCaregiver = caregivers.find(
-                      (cg) => cg.id === ast.cuidadorVinculadoId || cg.nome === ast.cuidadorVinculadoNome
-                    );
-
-                    return (
-                      <div
-                        key={ast.id}
-                        className="rounded-3xl bg-white p-6 shadow-sm border border-neutral-200 relative overflow-hidden transition-all hover:border-neutral-300"
+                  {familyAssistidos.length === 0 ? (
+                    <div className="p-12 rounded-3xl bg-white border border-dashed border-neutral-300 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-emerald-50 text-[#72b63f] flex items-center justify-center mx-auto">
+                        <Heart className="w-6 h-6" />
+                      </div>
+                      <h4 className="text-base font-bold text-neutral-800">Nenhum Assistido Cadastrado nesta Conta Familiar</h4>
+                      <p className="text-xs text-neutral-500 max-w-md mx-auto">
+                        Cadastre seu familiar idoso para configurar a rotina médica, sinais vitais e formalizar propostas com cuidadores qualificados.
+                      </p>
+                      <Link
+                        href="/assistido/novo"
+                        className="px-4 py-2.5 rounded-xl bg-[#72b63f] hover:bg-[#63a035] text-white text-xs font-bold shadow-sm transition-all inline-flex items-center gap-1.5"
                       >
+                        <Plus className="w-4 h-4" />
+                        Cadastrar Assistido Agora
+                      </Link>
+                    </div>
+                  ) : (
+                    familyAssistidos.map((ast) => {
+                      const activeContract = contracts.find(
+                        (c) =>
+                          (c.assistidoId === ast.id || c.patientName === ast.nome) &&
+                          (c.status === "ativo" || c.status === "pendente")
+                      );
+                      const linkedCaregiver = caregivers.find(
+                        (cg) =>
+                          (activeContract && (cg.id === activeContract.caregiverId || cg.nome.toLowerCase() === activeContract.caregiverName.toLowerCase())) ||
+                          cg.id === ast.cuidadorVinculadoId ||
+                          cg.nome === ast.cuidadorVinculadoNome
+                      );
+
+                      return (
+                        <div
+                          key={ast.id}
+                          className="rounded-3xl bg-white p-6 shadow-sm border border-neutral-200 relative overflow-hidden transition-all hover:border-neutral-300"
+                        >
                         <div
                           className={`absolute top-0 right-0 left-0 h-1.5 ${
                             ast.status === "vinculada"
@@ -689,7 +794,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     );
-                  })}
+                  }))}
                 </div>
               ) : (
                 /* VISÃO DO CUIDADOR: EXCLUSIVIDADE E ISOLAMENTO */
@@ -913,7 +1018,7 @@ export default function DashboardPage() {
                       <input
                         type="range"
                         min={30}
-                        max={80}
+                        max={150}
                         step={5}
                         value={maxPrice}
                         onChange={(e) => setMaxPrice(Number(e.target.value))}
@@ -974,12 +1079,24 @@ export default function DashboardPage() {
                               </p>
 
                               <div className="flex flex-wrap gap-1 mt-2.5">
-                                {caregiver.habilidades.slice(0, 2).map((h, i) => (
-                                  <span key={i} className="px-2 py-0.5 rounded-md bg-neutral-100 text-[10px] font-medium text-neutral-700">
+                                {(caregiver.habilidades || []).slice(0, 3).map((h, i) => (
+                                  <span key={i} className="px-2 py-0.5 rounded-md bg-[#02a9b5]/10 text-[#028490] text-[10px] font-bold">
                                     {h}
                                   </span>
                                 ))}
                               </div>
+
+                              {/* Depoimento Recente (Conforme Especificação 3.0 / prompt3.md) */}
+                              {caregiver.reviews && caregiver.reviews.length > 0 && (
+                                <div className="mt-3 p-2.5 rounded-xl bg-slate-50 border-l-3 border-[#02a9b5] text-xs">
+                                  <p className="italic text-neutral-600 text-[11px] line-clamp-2 leading-relaxed">
+                                    "{caregiver.reviews[0].comment}"
+                                  </p>
+                                  <span className="text-[10px] font-bold text-neutral-500 mt-1 block">
+                                    — {caregiver.reviews[0].authorName} ({caregiver.reviews[0].authorRelation || "Familiar"})
+                                  </span>
+                                </div>
+                              )}
                             </div>
 
                             <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center gap-2">
@@ -1162,70 +1279,91 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-3">
-                {contracts.map((contract) => (
-                  <div
-                    key={contract.id}
-                    className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 interactive-card"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                            contract.status === "ativo"
-                              ? "bg-[#72b63f]/10 text-[#558a2e] border-[#72b63f]/25"
+                {userProposals.length === 0 ? (
+                  <div className="p-12 rounded-3xl bg-white border border-dashed border-neutral-300 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-50 text-[#02a9b5] flex items-center justify-center mx-auto">
+                      <Bell className="w-6 h-6" />
+                    </div>
+                    <h4 className="text-base font-bold text-neutral-800">Nenhuma Proposta Registrada</h4>
+                    <p className="text-xs text-neutral-500 max-w-md mx-auto">
+                      {userRole === "family"
+                        ? "Quando você contratar um cuidador ou receber candidaturas de profissionais, elas aparecerão listadas aqui."
+                        : "Você ainda não possui propostas enviadas ou recebidas. Acesse a vitrine de oportunidades para se candidatar."}
+                    </p>
+                    <button
+                      onClick={() => setActiveTab("explorar")}
+                      className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-neutral-800 text-white text-xs font-bold shadow-sm transition-all inline-flex items-center gap-1.5"
+                    >
+                      <Users className="w-4 h-4" />
+                      {userRole === "family" ? "Buscar Cuidadores" : "Explorar Oportunidades"}
+                    </button>
+                  </div>
+                ) : (
+                  userProposals.map((contract) => (
+                    <div
+                      key={contract.id}
+                      className="p-5 rounded-2xl bg-white border border-neutral-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 interactive-card"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                              contract.status === "ativo"
+                                ? "bg-[#72b63f]/10 text-[#558a2e] border-[#72b63f]/25"
+                                : contract.status === "pendente"
+                                ? "bg-amber-50 text-amber-800 border-amber-200"
+                                : "bg-rose-50 text-rose-800 border-rose-200"
+                            }`}
+                          >
+                            {contract.status === "ativo"
+                              ? "Contrato Ativo"
                               : contract.status === "pendente"
-                              ? "bg-amber-50 text-amber-800 border-amber-200"
-                              : "bg-rose-50 text-rose-800 border-rose-200"
-                          }`}
-                        >
-                          {contract.status === "ativo"
-                            ? "Contrato Ativo"
-                            : contract.status === "pendente"
-                            ? "Proposta em Análise"
-                            : "Encerrado / Recusado"}
-                        </span>
-                        <span className="text-xs text-neutral-400 font-medium">{contract.createdAt}</span>
+                              ? "Proposta em Análise"
+                              : "Encerrado / Recusado"}
+                          </span>
+                          <span className="text-xs text-neutral-400 font-medium">{contract.createdAt}</span>
+                        </div>
+
+                        <h3 className="text-lg font-bold text-neutral-900">
+                          {contract.caregiverName} ➔ {contract.patientName} ({contract.familyName})
+                        </h3>
+                        <p className="text-xs text-neutral-600 font-medium mt-0.5">
+                          Escala: <strong>{contract.frequency}</strong> • Honorários: R$ {contract.hourlyRate}/h • Endereço: {contract.patientAddress}
+                        </p>
                       </div>
 
-                      <h3 className="text-lg font-bold text-neutral-900">
-                        {contract.caregiverName} ➔ {contract.patientName} ({contract.familyName})
-                      </h3>
-                      <p className="text-xs text-neutral-600 font-medium mt-0.5">
-                        Escala: <strong>{contract.frequency}</strong> • Honorários: R$ {contract.hourlyRate}/h • Endereço: {contract.patientAddress}
-                      </p>
-                    </div>
+                      <div className="flex items-center gap-2">
+                        {contract.status === "pendente" && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => acceptContract(contract.id)}
+                              className="px-3.5 py-2 rounded-xl bg-[#72b63f] hover:bg-[#63a035] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 active:scale-98"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Aceitar & Formalizar
+                            </button>
+                            <button
+                              onClick={() => rejectContract(contract.id)}
+                              className="px-3.5 py-2 rounded-xl bg-neutral-100 hover:bg-rose-100 hover:text-rose-700 text-neutral-700 text-xs font-bold transition-all flex items-center gap-1.5 active:scale-98"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              Recusar
+                            </button>
+                          </div>
+                        )}
 
-                    <div className="flex items-center gap-2">
-                      {contract.status === "pendente" && userRole === "caregiver" && (
-                        <div className="flex gap-2">
+                        {contract.status === "ativo" && (
                           <button
-                            onClick={() => acceptContract(contract.id)}
-                            className="px-3.5 py-2 rounded-xl bg-[#72b63f] hover:bg-[#63a035] text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                            onClick={() => openTerminate(contract)}
+                            className="px-3.5 py-2 rounded-xl bg-neutral-100 hover:bg-rose-50 hover:text-rose-700 text-neutral-700 text-xs font-bold transition-colors"
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Aceitar
+                            Encerrar Vínculo
                           </button>
-                          <button
-                            onClick={() => rejectContract(contract.id)}
-                            className="px-3.5 py-2 rounded-xl bg-neutral-100 hover:bg-rose-100 hover:text-rose-700 text-neutral-700 text-xs font-bold transition-all flex items-center gap-1.5"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                            Recusar
-                          </button>
-                        </div>
-                      )}
-
-                      {contract.status === "ativo" && (
-                        <button
-                          onClick={() => openTerminate(contract)}
-                          className="px-3.5 py-2 rounded-xl bg-neutral-100 hover:bg-rose-50 hover:text-rose-700 text-neutral-700 text-xs font-bold transition-colors"
-                        >
-                          Encerrar Vínculo
-                        </button>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </motion.div>
           )}
@@ -1263,74 +1401,93 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-6">
-                {familyAssistidos.map((ast) => (
-                  <div
-                    key={ast.id}
-                    className="p-6 rounded-3xl bg-white border border-neutral-200 shadow-sm space-y-4"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-2xl overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200 shadow-sm">
-                          <img
-                            src={ast.foto}
-                            alt={ast.nome}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-700 text-xs font-bold">
-                              {ast.parentesco} • {ast.idade} anos
-                            </span>
-                            <span className="text-xs text-neutral-500 font-medium">{ast.cidade}</span>
-                          </div>
-                          <h3 className="text-xl font-bold text-neutral-900 mt-1">{ast.nome}</h3>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => openMedicalChart(ast, true)}
-                        className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
-                      >
-                        <Stethoscope className="w-3.5 h-3.5 text-[#02a9b5]" />
-                        Editar Prontuário Clínico
-                      </button>
+                {familyAssistidos.length === 0 ? (
+                  <div className="p-12 rounded-3xl bg-white border border-dashed border-neutral-300 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-emerald-50 text-[#72b63f] flex items-center justify-center mx-auto">
+                      <FileText className="w-6 h-6" />
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
-                      <div className="p-3.5 rounded-2xl bg-neutral-50 border border-neutral-200">
-                        <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">
-                          Comorbidades Registradas
-                        </span>
-                        <div className="flex flex-wrap gap-1">
-                          {ast.comorbidades.map((c, i) => (
-                            <span key={i} className="text-xs font-bold text-neutral-800">
-                              {c}{i < ast.comorbidades.length - 1 ? ", " : ""}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl bg-neutral-50 border border-neutral-200">
-                        <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">
-                          Últimos Sinais Vitais
-                        </span>
-                        <span className="text-xs font-bold text-neutral-900 block">
-                          PA: {ast.sinaisVitais?.pressao} • Glicemia: {ast.sinaisVitais?.glicemia}
-                        </span>
-                      </div>
-
-                      <div className="p-3.5 rounded-2xl bg-neutral-50 border border-neutral-200">
-                        <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">
-                          Contato de Emergência
-                        </span>
-                        <span className="text-xs font-bold text-neutral-900 block">
-                          {ast.contatoEmergencia.nome} ({ast.contatoEmergencia.telefone})
-                        </span>
-                      </div>
-                    </div>
+                    <h4 className="text-base font-bold text-neutral-800">Nenhum Prontuário Disponível</h4>
+                    <p className="text-xs text-neutral-500 max-w-md mx-auto">
+                      Cadastre o seu familiar assistido para gerenciar histórico clínico, patologias, medicações de uso contínuo e contatos de emergência.
+                    </p>
+                    <Link
+                      href="/assistido/novo"
+                      className="px-4 py-2.5 rounded-xl bg-[#72b63f] hover:bg-[#63a035] text-white text-xs font-bold shadow-sm transition-all inline-flex items-center gap-1.5"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Cadastrar Assistido Agora
+                    </Link>
                   </div>
-                ))}
+                ) : (
+                  familyAssistidos.map((ast) => (
+                    <div
+                      key={ast.id}
+                      className="p-6 rounded-3xl bg-white border border-neutral-200 shadow-sm space-y-4"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-16 h-16 rounded-2xl overflow-hidden bg-neutral-100 flex-shrink-0 border border-neutral-200 shadow-sm">
+                            <img
+                              src={ast.foto}
+                              alt={ast.nome}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-700 text-xs font-bold">
+                                {ast.parentesco} • {ast.idade} anos
+                              </span>
+                              <span className="text-xs text-neutral-500 font-medium">{ast.cidade}</span>
+                            </div>
+                            <h3 className="text-xl font-bold text-neutral-900 mt-1">{ast.nome}</h3>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => openMedicalChart(ast, true)}
+                          className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+                        >
+                          <Stethoscope className="w-3.5 h-3.5 text-[#02a9b5]" />
+                          Editar Prontuário Clínico
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                        <div className="p-3.5 rounded-2xl bg-neutral-50 border border-neutral-200">
+                          <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">
+                            Comorbidades Registradas
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {ast.comorbidades.map((c, i) => (
+                              <span key={i} className="text-xs font-bold text-neutral-800">
+                                {c}{i < ast.comorbidades.length - 1 ? ", " : ""}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-neutral-50 border border-neutral-200">
+                          <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">
+                            Últimos Sinais Vitais
+                          </span>
+                          <span className="text-xs font-bold text-neutral-900 block">
+                            PA: {ast.sinaisVitais?.pressao} • Glicemia: {ast.sinaisVitais?.glicemia}
+                          </span>
+                        </div>
+
+                        <div className="p-3.5 rounded-2xl bg-neutral-50 border border-neutral-200">
+                          <span className="text-[10px] uppercase font-bold text-neutral-400 block mb-1">
+                            Contato de Emergência
+                          </span>
+                          <span className="text-xs font-bold text-neutral-900 block">
+                            {ast.contatoEmergencia.nome} ({ast.contatoEmergencia.telefone})
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </motion.div>
           )}
@@ -1457,6 +1614,11 @@ export default function DashboardPage() {
       <AddCaregiverModal
         isOpen={addCaregiverModalOpen}
         onClose={() => setAddCaregiverModalOpen(false)}
+      />
+
+      <AccountSwitcherModal
+        isOpen={accountSwitcherOpen}
+        onClose={() => setAccountSwitcherOpen(false)}
       />
     </div>
   );

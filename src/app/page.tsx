@@ -29,10 +29,12 @@ import Logo from "@/components/Logo";
 import { useToast } from "@/components/ToastProvider";
 import { maskCPF, maskPhone, maskCEP, fetchViaCEP, calculatePasswordStrength } from "@/lib/utils/masks";
 import { createClient } from "@/lib/supabase/client";
+import { useApp } from "@/context/AppContext";
 
 export default function HomePage() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
+  const { registerFamilyUser } = useApp();
   const supabase = createClient();
 
   const [step, setStep] = useState(1);
@@ -189,6 +191,20 @@ export default function HomePage() {
       if (error) {
         console.error("Supabase SignUp Notice:", error.message);
       }
+
+      // Registra a nova Família/Contratante no ecossistema reativo
+      registerFamilyUser({
+        name: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        cpf: formData.cpf,
+        address: {
+          street: `${formData.street}, ${formData.number}`,
+          neighborhood: formData.neighborhood,
+          city: formData.city,
+          state: formData.state
+        }
+      });
 
       sessionStorage.setItem("longevita_contractor_email", formData.email);
       sessionStorage.setItem("longevita_contractor_name", formData.fullName);
