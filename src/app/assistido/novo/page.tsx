@@ -224,12 +224,12 @@ export default function NovoAssistidoPage() {
 
       success("Assistido cadastrado!", `${nome} foi adicionado(a) com sucesso ao seu ecossistema.`);
       setTimeout(() => {
-        router.push("/");
+        router.push("/dashboard");
       }, 1200);
     } catch (err) {
       console.error(err);
       toastError("Erro ao salvar", "Os dados foram preservados localmente.");
-      router.push("/");
+      router.push("/dashboard");
     } finally {
       setIsSubmitting(false);
     }

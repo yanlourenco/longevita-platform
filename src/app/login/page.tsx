@@ -11,7 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { success, error: toastError } = useToast();
+  const { success, error: toastError, info } = useToast();
   const supabase = createClient();
 
   const [identifier, setIdentifier] = useState("");
@@ -60,22 +60,27 @@ export default function LoginPage() {
       });
 
       if (error) {
-        // Se der erro de credencial real no Supabase, oferecemos fallback simulado amigável
         console.warn("Supabase Auth notice:", error.message);
-        if (error.message.includes("Invalid login credentials") || error.message.includes("Email not confirmed")) {
-          // Permite demonstrar o fluxo mesmo em ambiente demo se for senha de teste
-          toastError("Acesso Demo", "Usuário não localizado no banco. Redirecionando em modo demonstração.");
+        if (error.message.includes("Email not confirmed") || (error as any).code === "email_not_confirmed") {
+          info("E-mail não confirmado", "Entrando no modo de acesso imediato.");
+          sessionStorage.setItem("longevita_contractor_email", identifier);
           setTimeout(() => {
-            router.push("/");
-          }, 1200);
+            router.push("/dashboard");
+          }, 1000);
           return;
         }
+
+        if (error.message.includes("Invalid login credentials")) {
+          toastError("Credenciais Inválidas", "Verifique seu e-mail e senha cadastrados.");
+          return;
+        }
+
         toastError("Falha na autenticação", error.message);
         return;
       }
 
       success("Bem-vindo(a) à LongeVita!", "Login realizado com sucesso.");
-      router.push("/");
+      router.push("/dashboard");
     } catch (err: any) {
       console.error(err);
       toastError("Erro ao conectar", "Verifique sua conexão ou tente novamente.");
