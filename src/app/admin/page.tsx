@@ -33,7 +33,8 @@ import {
   FileCheck,
   Layers,
   Menu,
-  RefreshCw
+  RefreshCw,
+  Presentation
 } from "lucide-react";
 import Logo from "@/components/Logo";
 import NotificationCenter from "@/components/NotificationCenter";
@@ -232,6 +233,18 @@ export default function AdminPage() {
                 <Zap className="w-4 h-4 text-amber-600" />
                 <span>Simulador de Eventos</span>
               </button>
+
+              {/* Botão de Acesso Direto aos Slides SWOT */}
+              <Link
+                href="/swot"
+                className="w-full mt-2 px-3.5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between bg-gradient-to-r from-[#070b12] to-[#1e293b] text-white hover:brightness-125 shadow-sm border border-slate-700 hover:border-[#02a9b5]"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Presentation className="w-4 h-4 text-[#72b63f]" />
+                  <span>Ver Slides SWOT</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              </Link>
             </div>
           </div>
         </div>
@@ -282,6 +295,13 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/swot"
+              className="text-xs font-extrabold text-slate-950 bg-gradient-to-r from-[#72b63f] to-[#02a9b5] hover:brightness-110 px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 shadow-sm"
+            >
+              <Presentation className="w-4 h-4 text-slate-950" />
+              <span>Ver Slides SWOT</span>
+            </Link>
             <NotificationCenter />
             <Link
               href="/dashboard"
